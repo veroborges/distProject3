@@ -14,6 +14,9 @@ public class ServerLocatorServiceImpl extends HessianServlet
 	public final String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public final String protocol = "jdbc:derby:";
 	public final PreparedStatement locationsStatement;
+	public final PreparedStatement usersStatement;
+	public final PreparedStatement userCountStatement;
+
 
 	private final Connection shardsConnection;
 
@@ -23,6 +26,13 @@ public class ServerLocatorServiceImpl extends HessianServlet
 					+ "shardsDB;create=true", null);
 			locationsStatement = shardsConnection
 					.prepareStatement("Select host, min((maxlat-minlat) * (maxlng - minlng)) from shards where minlat <= ? and ? < maxlat and minlng <= ? and ? < maxlng");
+			
+			//the table usershard not shards right? (or same above?)
+			usersStatement = shardsConnection
+					.prepareStatement("Select hostname from usershard where nodeid= ?");
+			userCountStatement = shardsConnection
+					.prepareStatement("Select count(nodeid) as counter");
+			
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}
@@ -30,8 +40,33 @@ public class ServerLocatorServiceImpl extends HessianServlet
 
 	@Override
 	public String getUserShard(String username) {
-		// TODO Auto-generated method stub
-		return null;
+		ResultSet rs = null;
+		int nodeCounter = 0;
+		try{
+			rs = userCountStatement.getResultSet();
+			while(rs.next()){
+				nodeCounter = rs.getInt("counter");
+			}
+			
+			usersStatement.setInt(1, username.hashCode() % nodeCounter); //username.hashCode % num of nodes?
+			rs = usersStatement.getResultSet();
+			
+			while(rs.next()){
+				return rs.getString("hostname");
+			}
+			return null;
+			
+		}catch (SQLException e) {
+			throw new IllegalStateException(e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		}
 	}
 
 	@Override

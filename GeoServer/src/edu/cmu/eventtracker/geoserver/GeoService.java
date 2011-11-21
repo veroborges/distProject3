@@ -5,4 +5,6 @@ import java.util.List;
 public interface GeoService {
 
     public List<Location> getUserLocations(String username);
+
+	public List<String> getUserEvents(String username);
 }
