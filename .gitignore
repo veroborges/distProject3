@@ -1,4 +1,9 @@
+.DS_Store
 dist
 build
 private
-.DS_Store
+bin
+locationsDB
+shardsDB
+usersDB
+derby.log

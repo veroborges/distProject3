@@ -5,15 +5,19 @@ import java.net.MalformedURLException;
 import com.caucho.hessian.client.HessianProxyFactory;
 
 import edu.cmu.eventtracker.geoserver.GeoService;
+import edu.cmu.eventtracker.geoserver.ServerLocatorService;
 
 public class GeoServerClient {
 
 	public static void main(String[] args) throws MalformedURLException {
-		String url = "http://localhost:9999/GeoService";
+		
+		//figure out URL for locator service, assume DNS will take care of that
+		String url = "http://localhost:9991/";
 
 		HessianProxyFactory factory = new HessianProxyFactory();
-		GeoService basic = (GeoService) factory.create(GeoService.class, url);
-
-		System.out.println("Hello: " + basic.hello());
+		ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url + ServerLocatorService.class.getSimpleName());
+		GeoService geoService = (GeoService) factory.create(GeoService.class, locatorService.getUserShard("testuser") + GeoService.class.getSimpleName());
+		geoService.getUserLocations("testuser");
+		
 	}
 }
