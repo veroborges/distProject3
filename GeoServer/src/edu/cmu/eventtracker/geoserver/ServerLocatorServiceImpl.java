@@ -15,8 +15,6 @@ public class ServerLocatorServiceImpl extends HessianServlet
 	public final String protocol = "jdbc:derby:";
 	public final PreparedStatement locationsStatement;
 	public final PreparedStatement usersStatement;
-	public final PreparedStatement userCountStatement;
-
 
 	private final Connection shardsConnection;
 
@@ -28,10 +26,12 @@ public class ServerLocatorServiceImpl extends HessianServlet
 					.prepareStatement("Select host, min((maxlat-minlat) * (maxlng - minlng)) from shards where minlat <= ? and ? < maxlat and minlng <= ? and ? < maxlng");
 			
 			//the table usershard not shards right? (or same above?)
+			//usersStatement = shardsConnection
+				//	.prepareStatement("Select hostname from usershard where nodeid= ?");
 			usersStatement = shardsConnection
-					.prepareStatement("Select hostname from usershard where nodeid= ?");
-			userCountStatement = shardsConnection
-					.prepareStatement("Select count(nodeid) as counter");
+					.prepareStatement("Select hostname from usershard where nodeid >= ? Order By nodeid");
+			
+			usersStatement.setMaxRows(1);
 			
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
@@ -41,18 +41,22 @@ public class ServerLocatorServiceImpl extends HessianServlet
 	@Override
 	public String getUserShard(String username) {
 		ResultSet rs = null;
-		int nodeCounter = 0;
+
 		try{
-			rs = userCountStatement.getResultSet();
-			while(rs.next()){
-				nodeCounter = rs.getInt("counter");
-			}
+			int hash = username.hashCode();
 			
-			usersStatement.setInt(1, username.hashCode() % nodeCounter); //username.hashCode % num of nodes?
+			usersStatement.setInt(1, hash);
 			rs = usersStatement.getResultSet();
 			
-			while(rs.next()){
+			if (rs.next()){
 				return rs.getString("hostname");
+			}
+			else{
+				usersStatement.setInt(1, 1);
+				
+				if (rs.next()){
+					return rs.getString("hostname");
+				}
 			}
 			return null;
 			
