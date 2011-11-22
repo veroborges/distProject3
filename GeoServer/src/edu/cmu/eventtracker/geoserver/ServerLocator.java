@@ -12,15 +12,19 @@ public class ServerLocator {
 
 	public String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public String protocol = "jdbc:derby:";
+	private int port;
 
 	public ServerLocator(int port, String jdbc) {
+		this.port = port;
 		try {
 
 			Server server = new Server(port);
 			ServletContextHandler context = new ServletContextHandler(server,
 					"/", ServletContextHandler.SESSIONS);
-			context.addServlet(new ServletHolder(GeoServiceImpl.class), "/"
-					+ GeoService.class.getSimpleName());
+			context.addServlet(
+					new ServletHolder(ServerLocatorServiceImpl.class), "/"
+							+ ServerLocatorService.class.getSimpleName());
+			context.setAttribute("PORT", port);
 			server.setHandler(context);
 			server.start();
 			Class.forName(driver).newInstance();
@@ -33,10 +37,10 @@ public class ServerLocator {
 			throw new IllegalStateException(e);
 		}
 	}
-	
+
 	private void initShardsDB() throws SQLException {
-		Connection conn = DriverManager.getConnection(protocol
-				+ "shardsDB;create=true", null);
+		Connection conn = DriverManager.getConnection(protocol + "shardsDB"
+				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
 				.execute("CREATE TABLE LOCATIONSHARD (LNGMAX FLOAT NOT NULL,LATMIN FLOAT NOT NULL,LNGMIN FLOAT NOT NULL, LATMAX FLOAT NOT NULL, HOSTNAME varchar(255) NOT NULL,PRIMARY KEY (LNGMAX,LATMIN,LNGMIN,LATMAX))");

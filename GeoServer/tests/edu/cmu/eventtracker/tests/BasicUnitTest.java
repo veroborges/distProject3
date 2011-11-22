@@ -15,7 +15,7 @@ import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.geoserver.ServerLocatorService;
 
 public class BasicUnitTest {
-	
+
 	public String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public String protocol = "jdbc:derby:";
 	Random gen = new Random();
@@ -23,7 +23,7 @@ public class BasicUnitTest {
 	
 	public void testCreateUsers(int userNumber) throws MalformedURLException {	
 		String url = "http://localhost:9991/";
-		
+
 		int counter = 0;
 		String username = "";
 		String password = "testpass";
@@ -33,16 +33,20 @@ public class BasicUnitTest {
 		while(counter < userNumber){
 			username = Integer.toString(gen.nextInt()) + Integer.toString(gen.nextInt());
 				HessianProxyFactory factory = new HessianProxyFactory();
-				ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url + ServerLocatorService.class.getSimpleName());
-				GeoService geoService = (GeoService) factory.create(GeoService.class, locatorService.getUserShard(username) + GeoService.class.getSimpleName());
-			
-				
-				if (geoService.addUser(username, name, password)){
-						counter++;
+				ServerLocatorService locatorService = (ServerLocatorService) factory
+						.create(ServerLocatorService.class, url
+								+ ServerLocatorService.class.getSimpleName());
+				GeoService geoService = (GeoService) factory.create(
+						GeoService.class, locatorService.getUserShard(username)
+								+ GeoService.class.getSimpleName());
+
+				if (geoService.addUser(username, name, password)) {
+					counter++;
 				}
+
 		}
 	}
-	
+
 	@Test
 	public void testSharding() throws MalformedURLException{
 		//figure out URL for locator service, assume DNS will take care of that
@@ -57,5 +61,6 @@ public class BasicUnitTest {
 		
 		GeoService geoService = (GeoService) factory.create(GeoService.class, locatorService.getUserShard("testuser") + GeoService.class.getSimpleName());
 		locatorService.getUserShard("testuser");
+
 	}
 }
