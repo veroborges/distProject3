@@ -21,4 +21,5 @@ public class GeoServerClient {
 		geoService.getUserEvents("testuser");
 		
 	}
+	
 }
