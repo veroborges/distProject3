@@ -42,6 +42,7 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			locationsStatement.setDouble(2, lat);
 			locationsStatement.setDouble(3, lng);
 			locationsStatement.setDouble(4, lng);
+			locationsStatement.execute();
 			rs = locationsStatement.getResultSet();
 			while (rs.next()) {
 				return rs.getString("host");
