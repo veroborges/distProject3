@@ -48,12 +48,12 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 
 			// statement to get all of a user's events
 			userEventsStatement = usersConnection
-					.prepareStatement("select name from event where id in (select eventid from userevent where username= ?)");
+					.prepareStatement("select event.name from event join userevent on event.id = userevent.eventid join users on userevent.username = users.username where userevent.username=?");
 
 			selectUser = usersConnection
-					.prepareStatement("select * from users where username= ?");
+					.prepareStatement("select username from users where username= ?");
 			createUser = usersConnection
-					.prepareStatement("insert into users values (?, ?, ?)");
+					.prepareStatement("insert into users(username, name, password) values (?, ?, ?)");
 
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
@@ -213,10 +213,10 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			// check if user already exists
 			selectUser.setString(1, username);
 			selectUser.execute();
-
+			rs = selectUser.getResultSet();
 			if (rs.next()) {
-				System.out.println("User" + username
-						+ "already exists in database");
+				System.out.println("User " + username
+						+ " already exists in database");
 				return false;
 			}
 			// create new user
@@ -226,13 +226,46 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				createUser.setString(3, pass);
 				createUser.executeUpdate();
 
-				System.out.println("Created user" + username
-						+ "in user database");
+				System.out.println("Created user " + username
+						+ " in user database");
 				return true;
 			}
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	public User getUser(String username) {
+		try {
+			PreparedStatement prepareStatement = usersConnection
+					.prepareStatement("Select username, name from users where username=?");
+			prepareStatement.setString(1, username);
+			prepareStatement.execute();
+			ResultSet rs = prepareStatement.getResultSet();
+			while (rs.next()) {
+				User user = new User();
+				user.setName(rs.getString("name"));
+				user.setUsername(rs.getString("username"));
+				return user;
+			}
+			return null;
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	public void clearUserDB() {
+		try {
+			Statement ps = usersConnection.createStatement();
+			ps.addBatch("Delete from users");
+			ps.addBatch("Delete from userevent");
+			ps.addBatch("Delete from event");
+			ps.addBatch("Delete from location");
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+
 	}
 
 }

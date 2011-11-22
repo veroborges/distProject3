@@ -36,7 +36,7 @@ public class ServerLocatorServiceImpl extends HessianServlet
 					.prepareStatement("Select hostname, min((latmax-latmin) * (lngmax - lngmin)) from locationshard where latmin <= ? and ? < latmax and lngmin <= ? and ? < lngmax group by hostname, lngmin, lngmax, latmax, latmin");
 
 			usersStatement = shardsConnection
-					.prepareStatement("Select hostname, max(nodeid) from usershard where nodeid <= ? group By hostname, nodeid");
+					.prepareStatement("select hostname from usershard join (Select max(nodeid) maxnode from usershard where nodeid <= ?) s on usershard.nodeid = maxnode");
 
 			usersMaxStatement = shardsConnection
 					.prepareStatement("Select max(nodeid) from usershard");
@@ -111,7 +111,6 @@ public class ServerLocatorServiceImpl extends HessianServlet
 
 	public void addUserShard(int nodeid, String hostname) {
 		try {
-
 			PreparedStatement createShard = shardsConnection
 					.prepareStatement("insert into usershard values(?, ?) ");
 
@@ -123,12 +122,32 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			throw new IllegalStateException(e);
 		}
 	}
-	public void addLocationShard(int minlat, int minlng, int maxlat,
-			int maxlng, String hostname) {
 
+	public void addLocationShard(int latmin, int lngmin, int latmax,
+			int lngmax, String hostname) {
+		try {
+			PreparedStatement createShard = shardsConnection
+					.prepareStatement("insert into locationshard(latmin, lngmin, latmax, lngmax) values(?, ?, ?, ?, ?) ");
+
+			createShard.setDouble(1, latmin);
+			createShard.setDouble(2, lngmin);
+			createShard.setDouble(3, latmax);
+			createShard.setDouble(4, lngmax);
+			createShard.setString(5, hostname);
+			createShard.execute();
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
-	public void dropTables() {
-
+	public void clearTables() {
+		try {
+			shardsConnection.prepareStatement("Delete from locationshard")
+					.execute();
+			shardsConnection.prepareStatement("Delete from usershard")
+					.execute();
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 }
