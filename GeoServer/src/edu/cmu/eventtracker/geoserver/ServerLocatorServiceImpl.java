@@ -107,5 +107,20 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			}
 		}
 	}
-
+	
+	public void addUserShard(int nodeid, String hostname){
+		try {
+			Connection conn = DriverManager.getConnection(protocol
+					+ "shardsDB;create=true", null);
+			
+			PreparedStatement createShard = conn.prepareStatement("insert into usershards values(?, ?) ");
+		
+			createShard.setInt(1, nodeid);
+			createShard.setString(2, hostname);
+			createShard.execute();
+			
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+	}
 }
