@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import com.caucho.hessian.client.HessianProxyFactory;
 import com.caucho.hessian.server.HessianServlet;
 import com.effectiveJava.GeoLocationService;
 import com.effectiveJava.Point;
@@ -26,6 +27,9 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	private final int MAX_PERIOD = 60; // minutes
 	public final PreparedStatement userLocationsStatement;
 	public final PreparedStatement userEventsStatement;
+	public final PreparedStatement selectUser ;
+	public final PreparedStatement createUser;
+	
 
 	public GeoServiceImpl() {
 		try {
@@ -42,6 +46,9 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			userEventsStatement = usersConnection
 					.prepareStatement("select name from event where id in (select eventid from userevent where username= ?)");
 
+			selectUser = usersConnection.prepareStatement("select * from users where username= ?");
+			createUser = usersConnection.prepareStatement("insert into users values (?, ?, ?)");
+			
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}
@@ -191,5 +198,33 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			throw new IllegalStateException(e);
 		}
 	}
+	
+	public boolean addUser(String username, String name, String pass){
+		ResultSet rs = null;
 
+		try{	
+
+			//check if user already exists
+			selectUser.setString(1, username);
+			selectUser.execute();
+	
+			if (rs.next()){
+				System.out.println("User" + username + "already exists in database");
+				return false;
+			}
+			//create new user
+			else{
+				createUser.setString(1, username);
+				createUser.setString(2, name);
+				createUser.setString(3, pass);
+				createUser.executeUpdate();
+				
+				System.out.println("Created user" + username + "in user database");
+				return true;
+		}
+		}catch (SQLException e) {
+			throw new IllegalStateException(e);
+		} 
+	}
+	
 }

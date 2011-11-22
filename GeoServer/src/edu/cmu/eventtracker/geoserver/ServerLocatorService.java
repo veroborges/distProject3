@@ -4,5 +4,5 @@ public interface ServerLocatorService {
 
 	public String getUserShard(String username);
 	public String getLocationShard(double lat, double lng);
-	
+	public void addUserShard(int nodeid, String hostname);
 }
