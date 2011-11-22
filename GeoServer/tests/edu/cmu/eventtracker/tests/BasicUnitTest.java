@@ -21,7 +21,7 @@ public class BasicUnitTest {
 	Random gen = new Random();
 
 	
-	public void testCreateUsers(int userNumber) {	
+	public void testCreateUsers(int userNumber) throws MalformedURLException {	
 		String url = "http://localhost:9991/";
 		
 		int counter = 0;
@@ -32,7 +32,6 @@ public class BasicUnitTest {
 	
 		while(counter < userNumber){
 			username = Integer.toString(gen.nextInt()) + Integer.toString(gen.nextInt());
-			try {
 				HessianProxyFactory factory = new HessianProxyFactory();
 				ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url + ServerLocatorService.class.getSimpleName());
 				GeoService geoService = (GeoService) factory.create(GeoService.class, locatorService.getUserShard(username) + GeoService.class.getSimpleName());
@@ -41,15 +40,22 @@ public class BasicUnitTest {
 				if (geoService.addUser(username, name, password)){
 						counter++;
 				}
-				
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 	
 	@Test
-	public void testSharding(){
+	public void testSharding() throws MalformedURLException{
+		//figure out URL for locator service, assume DNS will take care of that
+		String url1 = "http://localhost:9991/";
+		String url2 = "http://localhost:9995/";
+	
+		HessianProxyFactory factory = new HessianProxyFactory();
+		ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url1 + ServerLocatorService.class.getSimpleName());
+		locatorService.addUserShard(0, url1);
+		locatorService.addUserShard((2^32)%2, url2);
 		
+		
+		GeoService geoService = (GeoService) factory.create(GeoService.class, locatorService.getUserShard("testuser") + GeoService.class.getSimpleName());
+		locatorService.getUserShard("testuser");
 	}
 }
