@@ -13,29 +13,29 @@ public class GeoServer {
 	public String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public String protocol = "jdbc:derby:";
 	private int port;
-	
+	private Server server;
+
 	public GeoServer(int port) {
 		this.port = port;
 		try {
 
-			Server server = new Server(port);
+			server = new Server(port);
 			ServletContextHandler context = new ServletContextHandler(server,
 					"/", ServletContextHandler.SESSIONS);
 			context.addServlet(new ServletHolder(GeoServiceImpl.class), "/"
 					+ GeoService.class.getSimpleName());
 			context.setAttribute("PORT", port);
 			server.setHandler(context);
-			server.start();
 			Class.forName(driver).newInstance();
 			try {
 				initUsersDB();
 			} catch (SQLException ex) {
-				//ex.printStackTrace();
+				// ex.printStackTrace();
 			}
 			try {
 				initLocationsDB();
 			} catch (SQLException ex) {
-				//ex.printStackTrace();
+				// ex.printStackTrace();
 			}
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
@@ -43,8 +43,8 @@ public class GeoServer {
 	}
 
 	private void initUsersDB() throws SQLException {
-		Connection conn = DriverManager.getConnection(protocol
-				+ "usersDB" + port +";create=true", null);
+		Connection conn = DriverManager.getConnection(protocol + "usersDB"
+				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
 				.execute("CREATE TABLE LOCATION (  ID bigint not null GENERATED ALWAYS AS IDENTITY,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_id bigint DEFAULT NULL,  PRIMARY KEY (ID))");
@@ -62,8 +62,8 @@ public class GeoServer {
 		conn.close();
 	}
 	private void initLocationsDB() throws SQLException {
-		Connection conn = DriverManager.getConnection(protocol
-				+ "locationsDB" + port +";create=true", null);
+		Connection conn = DriverManager.getConnection(protocol + "locationsDB"
+				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
 				.execute("CREATE TABLE LOCATION (  ID bigint not null GENERATED ALWAYS AS IDENTITY,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_id bigint DEFAULT NULL,  PRIMARY KEY (ID))");
@@ -82,7 +82,24 @@ public class GeoServer {
 	}
 
 	public static void main(String[] args) {
-		new GeoServer(9990);
+		try {
+			new GeoServer(9990).start();
+		} catch (Throwable e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	public void start() throws Exception {
+		server.start();
+	}
+
+	public void stop() throws Exception {
+		server.stop();
+		try {
+			DriverManager.getConnection(protocol + ";shutdown=true");
+		} catch (SQLException e) {
+
+		}
 	}
 
 }

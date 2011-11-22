@@ -10,4 +10,6 @@ public interface GeoService {
 	public boolean addUser(String username, String name, String pass);
 	public User getUser(String username);
 	public void clearUserDB();
+	public void clearLocationsDB();
+	public PingResponse ping(double lat, double lng, String username);
 }

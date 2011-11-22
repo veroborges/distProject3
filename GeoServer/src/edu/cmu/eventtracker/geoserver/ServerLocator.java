@@ -13,12 +13,13 @@ public class ServerLocator {
 	public String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public String protocol = "jdbc:derby:";
 	private int port;
+	private Server server;
 
 	public ServerLocator(int port) {
 		this.port = port;
 		try {
 
-			Server server = new Server(port);
+			server = new Server(port);
 			ServletContextHandler context = new ServletContextHandler(server,
 					"/", ServletContextHandler.SESSIONS);
 			context.addServlet(
@@ -26,12 +27,11 @@ public class ServerLocator {
 							+ ServerLocatorService.class.getSimpleName());
 			context.setAttribute("PORT", port);
 			server.setHandler(context);
-			server.start();
 			Class.forName(driver).newInstance();
 			try {
 				initShardsDB();
 			} catch (SQLException ex) {
-				//ex.printStackTrace();
+				// ex.printStackTrace();
 			}
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
@@ -43,14 +43,31 @@ public class ServerLocator {
 				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
-				.execute("CREATE TABLE LOCATIONSHARD (LNGMAX FLOAT NOT NULL,LATMIN FLOAT NOT NULL,LNGMIN FLOAT NOT NULL, LATMAX FLOAT NOT NULL, HOSTNAME varchar(255) NOT NULL,PRIMARY KEY (LNGMAX,LATMIN,LNGMIN,LATMAX))");
+				.execute("CREATE TABLE LOCATIONSHARD (LNGMAX FLOAT NOT NULL,LATMIN FLOAT NOT NULL,LNGMIN FLOAT NOT NULL, LATMAX FLOAT NOT NULL, HOSTNAME varchar(255) NOT NULL, NAME varchar(255),PRIMARY KEY (LNGMAX,LATMIN,LNGMIN,LATMAX))");
 		statement
 				.execute("CREATE TABLE USERSHARD (NODEID INTEGER NOT NULL, HOSTNAME varchar(255) NOT NULL,  PRIMARY KEY (NODEID))");
 		conn.close();
 	}
 
 	public static void main(String[] args) {
-		new ServerLocator(9991);
+		try {
+			new ServerLocator(8888).start();
+		} catch (Throwable e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	public void start() throws Exception {
+		server.start();
+	}
+
+	public void stop() throws Exception {
+		server.stop();
+		try {
+			DriverManager.getConnection(protocol + ";shutdown=true");
+		} catch (SQLException e) {
+
+		}
 	}
 
 }

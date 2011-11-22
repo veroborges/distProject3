@@ -128,7 +128,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		response.setEvents(new ArrayList<String>());
 		try {
 			PreparedStatement statement = locationsConnection
-					.prepareStatement("Insert into locations(lat, lng, username, timestamp) values (?, ?, ?, ?)");
+					.prepareStatement("Insert into location(lat, lng, username, timestamp) values (?, ?, ?, ?)");
 			statement.setDouble(1, lat);
 			statement.setDouble(2, lng);
 			statement.setString(3, username);
@@ -160,7 +160,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				}
 			}
 		} catch (SQLException e) {
-
+			throw new IllegalStateException(e);
 		}
 		return response;
 	}
@@ -258,6 +258,19 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		try {
 			Statement ps = usersConnection.createStatement();
 			ps.addBatch("Delete from users");
+			ps.addBatch("Delete from userevent");
+			ps.addBatch("Delete from event");
+			ps.addBatch("Delete from location");
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+
+	}
+
+	public void clearLocationsDB() {
+		try {
+			Statement ps = locationsConnection.createStatement();
 			ps.addBatch("Delete from userevent");
 			ps.addBatch("Delete from event");
 			ps.addBatch("Delete from location");

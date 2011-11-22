@@ -1,13 +1,13 @@
 package edu.cmu.eventtracker.geoserver;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class PingResponse {
+public class PingResponse implements Serializable {
 
 	private ArrayList<String> events;
 	private boolean canCreateEvent;
-	
-	
+
 	/**
 	 * @return the events
 	 */

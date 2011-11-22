@@ -93,7 +93,7 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			locationsStatement.setMaxRows(1);
 			rs = locationsStatement.getResultSet();
 			while (rs.next()) {
-				return rs.getString("host");
+				return rs.getString("hostname");
 			}
 			return null;
 		} catch (SQLException e) {
@@ -123,17 +123,18 @@ public class ServerLocatorServiceImpl extends HessianServlet
 		}
 	}
 
-	public void addLocationShard(int latmin, int lngmin, int latmax,
-			int lngmax, String hostname) {
+	public void addLocationShard(double latmin, double lngmin, double latmax,
+			double lngmax, String hostname, String name) {
 		try {
 			PreparedStatement createShard = shardsConnection
-					.prepareStatement("insert into locationshard(latmin, lngmin, latmax, lngmax) values(?, ?, ?, ?, ?) ");
+					.prepareStatement("insert into locationshard(latmin, lngmin, latmax, lngmax, hostname, name) values(?, ?, ?, ?, ?, ?) ");
 
 			createShard.setDouble(1, latmin);
 			createShard.setDouble(2, lngmin);
 			createShard.setDouble(3, latmax);
 			createShard.setDouble(4, lngmax);
 			createShard.setString(5, hostname);
+			createShard.setString(6, name);
 			createShard.execute();
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
