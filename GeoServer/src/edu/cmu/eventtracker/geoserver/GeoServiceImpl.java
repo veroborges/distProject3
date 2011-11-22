@@ -24,12 +24,24 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	private final double RADIUS = 0.5; // km
 	private final int MIN_COUNT = 10;
 	private final int MAX_PERIOD = 60; // minutes
+	public final PreparedStatement userLocationsStatement;
+	public final PreparedStatement userEventsStatement;
+
 	public GeoServiceImpl() {
 		try {
 			usersConnection = DriverManager.getConnection(protocol
 					+ "usersDB;create=true", null);
 			locationsConnection = DriverManager.getConnection(protocol
 					+ "locationsDB;create=true", null);
+
+			// statement to get all of a user's locations
+			userLocationsStatement = usersConnection
+					.prepareStatement("select lat, lng, event_id from location where username= ?");
+
+			// statement to get all of a user's events
+			userEventsStatement = usersConnection
+					.prepareStatement("select name from event where id in (select eventid from userevent where username= ?)");
+
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}
@@ -37,8 +49,65 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 
 	@Override
 	public List<Location> getUserLocations(String username) {
-		// select statement here
-		return null;
+		List<Location> locations = new ArrayList<Location>();
+		ResultSet rs = null;
+		try {
+			userLocationsStatement.setString(1, username);
+			rs = userLocationsStatement.getResultSet();
+
+			// populate location lists with rows returned
+			while (rs.next()) {
+				// create location object
+				Location loc = new Location();
+				loc.setLat(rs.getFloat("lat"));
+				loc.setLng(rs.getFloat("lng"));
+				loc.setUsername(username);
+				loc.setEvent(rs.getInt("event_id"));
+				locations.add(loc);
+			}
+
+			return locations;
+
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		}
+	}
+
+	@Override
+	public List<String> getUserEvents(String username) {
+		List<String> events = new ArrayList<String>();
+		ResultSet rs = null;
+
+		try {
+			userEventsStatement.setString(1, username);
+			rs = userEventsStatement.getResultSet();
+
+			// popule events list with eventnames returned
+			while (rs.next()) {
+				events.add(rs.getString("name"));
+			}
+
+			return events;
+
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		}
 	}
 
 	public PingResponse ping(double lat, double lng, String username) {

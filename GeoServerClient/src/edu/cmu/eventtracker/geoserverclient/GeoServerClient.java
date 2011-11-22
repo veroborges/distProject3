@@ -18,6 +18,8 @@ public class GeoServerClient {
 		ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url + ServerLocatorService.class.getSimpleName());
 		GeoService geoService = (GeoService) factory.create(GeoService.class, locatorService.getUserShard("testuser") + GeoService.class.getSimpleName());
 		geoService.getUserLocations("testuser");
+		geoService.getUserEvents("testuser");
 		
 	}
+	
 }
