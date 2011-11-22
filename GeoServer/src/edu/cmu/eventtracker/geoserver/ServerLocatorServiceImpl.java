@@ -33,10 +33,10 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			shardsConnection = DriverManager.getConnection(protocol
 					+ "shardsDB" + port + ";create=true", null);
 			locationsStatement = shardsConnection
-					.prepareStatement("Select host, min((maxlat-minlat) * (maxlng - minlng)) from locationshard where minlat <= ? and ? < maxlat and minlng <= ? and ? < maxlng");
+					.prepareStatement("Select hostname, min((latmax-latmin) * (lngmax - lngmin)) from locationshard where latmin <= ? and ? < latmax and lngmin <= ? and ? < lngmax group by hostname, lngmin, lngmax, latmax, latmin");
 
 			usersStatement = shardsConnection
-					.prepareStatement("Select hostname, max(nodeid) from usershard where nodeid <= ? group By nodeid");
+					.prepareStatement("Select hostname, max(nodeid) from usershard where nodeid <= ? group By hostname, nodeid");
 
 			usersMaxStatement = shardsConnection
 					.prepareStatement("Select max(nodeid) from usershard");
@@ -111,8 +111,9 @@ public class ServerLocatorServiceImpl extends HessianServlet
 
 	public void addUserShard(int nodeid, String hostname) {
 		try {
+
 			PreparedStatement createShard = shardsConnection
-					.prepareStatement("insert into usershards values(?, ?) ");
+					.prepareStatement("insert into usershard values(?, ?) ");
 
 			createShard.setInt(1, nodeid);
 			createShard.setString(2, hostname);
@@ -122,9 +123,12 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			throw new IllegalStateException(e);
 		}
 	}
-
 	public void addLocationShard(int minlat, int minlng, int maxlat,
 			int maxlng, String hostname) {
+
+	}
+
+	public void dropTables() {
 
 	}
 }

@@ -14,7 +14,7 @@ public class GeoServer {
 	public String protocol = "jdbc:derby:";
 	private int port;
 	
-	public GeoServer(int port, String jdbc) {
+	public GeoServer(int port) {
 		this.port = port;
 		try {
 
@@ -82,7 +82,7 @@ public class GeoServer {
 	}
 
 	public static void main(String[] args) {
-		new GeoServer(9990, "");
+		new GeoServer(9990);
 	}
 
 }

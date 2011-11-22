@@ -14,7 +14,7 @@ public class ServerLocator {
 	public String protocol = "jdbc:derby:";
 	private int port;
 
-	public ServerLocator(int port, String jdbc) {
+	public ServerLocator(int port) {
 		this.port = port;
 		try {
 
@@ -31,7 +31,7 @@ public class ServerLocator {
 			try {
 				initShardsDB();
 			} catch (SQLException ex) {
-				ex.printStackTrace();
+				//ex.printStackTrace();
 			}
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
@@ -50,7 +50,7 @@ public class ServerLocator {
 	}
 
 	public static void main(String[] args) {
-		new ServerLocator(9991, "");
+		new ServerLocator(9991);
 	}
 
 }
