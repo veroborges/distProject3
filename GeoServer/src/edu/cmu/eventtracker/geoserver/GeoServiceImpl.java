@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import javax.servlet.ServletException;
+
 import com.caucho.hessian.server.HessianServlet;
 import com.effectiveJava.GeoLocationService;
 import com.effectiveJava.Point;
@@ -19,20 +21,24 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	public final String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public final String protocol = "jdbc:derby:";
 
-	private final Connection usersConnection;
-	private final Connection locationsConnection;
+	private Connection usersConnection;
+	private Connection locationsConnection;
 	private final double RADIUS = 0.5; // km
 	private final int MIN_COUNT = 10;
 	private final int MAX_PERIOD = 60; // minutes
-	public final PreparedStatement userLocationsStatement;
-	public final PreparedStatement userEventsStatement;
+	public PreparedStatement userLocationsStatement;
+	public PreparedStatement userEventsStatement;
 
-	public GeoServiceImpl() {
+
+	@Override
+	public void init() throws ServletException {
+		super.init();
+		int port = (Integer) this.getServletContext().getAttribute("PORT");
 		try {
-			usersConnection = DriverManager.getConnection(protocol
-					+ "usersDB;create=true", null);
+			usersConnection = DriverManager.getConnection(protocol + "usersDB"
+					+ port + ";create=true", null);
 			locationsConnection = DriverManager.getConnection(protocol
-					+ "locationsDB;create=true", null);
+					+ "locationsDB" + port + ";create=true", null);
 
 			// statement to get all of a user's locations
 			userLocationsStatement = usersConnection

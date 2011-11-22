@@ -12,8 +12,10 @@ public class GeoServer {
 
 	public String driver = "org.apache.derby.jdbc.EmbeddedDriver";
 	public String protocol = "jdbc:derby:";
-
+	private int port;
+	
 	public GeoServer(int port, String jdbc) {
+		this.port = port;
 		try {
 
 			Server server = new Server(port);
@@ -21,28 +23,28 @@ public class GeoServer {
 					"/", ServletContextHandler.SESSIONS);
 			context.addServlet(new ServletHolder(GeoServiceImpl.class), "/"
 					+ GeoService.class.getSimpleName());
+			context.setAttribute("PORT", port);
 			server.setHandler(context);
 			server.start();
 			Class.forName(driver).newInstance();
 			try {
 				initUsersDB();
 			} catch (SQLException ex) {
-				ex.printStackTrace();
+				//ex.printStackTrace();
 			}
 			try {
 				initLocationsDB();
 			} catch (SQLException ex) {
-				ex.printStackTrace();
+				//ex.printStackTrace();
 			}
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
 		}
 	}
 
-
 	private void initUsersDB() throws SQLException {
 		Connection conn = DriverManager.getConnection(protocol
-				+ "usersDB;create=true", null);
+				+ "usersDB" + port +";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
 				.execute("CREATE TABLE LOCATION (  ID bigint not null GENERATED ALWAYS AS IDENTITY,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_id bigint DEFAULT NULL,  PRIMARY KEY (ID))");
@@ -61,7 +63,7 @@ public class GeoServer {
 	}
 	private void initLocationsDB() throws SQLException {
 		Connection conn = DriverManager.getConnection(protocol
-				+ "locationsDB;create=true", null);
+				+ "locationsDB" + port +";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
 				.execute("CREATE TABLE LOCATION (  ID bigint not null GENERATED ALWAYS AS IDENTITY,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_id bigint DEFAULT NULL,  PRIMARY KEY (ID))");
