@@ -1,284 +1,49 @@
 package edu.cmu.eventtracker.geoserver;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
 
 import javax.servlet.ServletException;
 
 import com.caucho.hessian.server.HessianServlet;
-import com.effectiveJava.GeoLocationService;
-import com.effectiveJava.Point;
+
+import edu.cmu.eventtracker.geoserver.action.Action;
+import edu.cmu.eventtracker.geoserver.actionhandler.GeoServiceContext;
 
 public class GeoServiceImpl extends HessianServlet implements GeoService {
-	public final String driver = "org.apache.derby.jdbc.EmbeddedDriver";
-	public final String protocol = "jdbc:derby:";
 
-	private Connection usersConnection;
-	private Connection locationsConnection;
-	private final double RADIUS = 0.5; // km
-	private final int MIN_COUNT = 10;
-	private final int MAX_PERIOD = 60; // minutes
-
-	public PreparedStatement userLocationsStatement;
-	public PreparedStatement userEventsStatement;
-	public PreparedStatement selectUser;
-	public PreparedStatement createUser;
+	private GeoServiceContext context;
 
 	@Override
 	public void init() throws ServletException {
 		super.init();
-		int port = (Integer) this.getServletContext().getAttribute("PORT");
-		try {
-			usersConnection = DriverManager.getConnection(protocol + "usersDB"
-					+ port + ";create=true", null);
-			locationsConnection = DriverManager.getConnection(protocol
-					+ "locationsDB" + port + ";create=true", null);
+		context = new GeoServiceContext(this);
 
-			// statement to get all of a user's locations
-			userLocationsStatement = usersConnection
-					.prepareStatement("select lat, lng, event_id from location where username= ?");
-
-			// statement to get all of a user's events
-			userEventsStatement = usersConnection
-					.prepareStatement("select event.name from event join userevent on event.id = userevent.eventid join users on userevent.username = users.username where userevent.username=?");
-
-			selectUser = usersConnection
-					.prepareStatement("select username from users where username= ?");
-			createUser = usersConnection
-					.prepareStatement("insert into users(username, name, password) values (?, ?, ?)");
-
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
 	}
-
 	@Override
-	public List<Location> getUserLocations(String username) {
-		List<Location> locations = new ArrayList<Location>();
-		ResultSet rs = null;
+	public <A extends Action<R>, R> R execute(A action) {
+		boolean commit = true;
 		try {
-			userLocationsStatement.setString(1, username);
-			rs = userLocationsStatement.getResultSet();
-
-			// populate location lists with rows returned
-			while (rs.next()) {
-				// create location object
-				Location loc = new Location();
-				loc.setLat(rs.getFloat("lat"));
-				loc.setLng(rs.getFloat("lng"));
-				loc.setUsername(username);
-				loc.setEvent(rs.getInt("event_id"));
-				locations.add(loc);
-			}
-
-			return locations;
-
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
+			return context.execute(action);
+		} catch (RuntimeException ex) {
+			commit = false;
+			throw ex;
 		} finally {
-			if (rs != null) {
+			if (commit) {
 				try {
-					rs.close();
+					context.getUsersConnection().commit();
+					context.getLocationsConnection().commit();
+				} catch (SQLException e) {
+					throw new IllegalStateException(e);
+				}
+			} else {
+				try {
+					context.getUsersConnection().rollback();
+					context.getLocationsConnection().rollback();
 				} catch (SQLException e) {
 					throw new IllegalStateException(e);
 				}
 			}
 		}
-	}
-
-	@Override
-	public List<String> getUserEvents(String username) {
-		List<String> events = new ArrayList<String>();
-		ResultSet rs = null;
-
-		try {
-			userEventsStatement.setString(1, username);
-			rs = userEventsStatement.getResultSet();
-
-			// popule events list with eventnames returned
-			while (rs.next()) {
-				events.add(rs.getString("name"));
-			}
-
-			return events;
-
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException e) {
-					throw new IllegalStateException(e);
-				}
-			}
-		}
-	}
-
-	public PingResponse ping(double lat, double lng, String username) {
-		PingResponse response = new PingResponse();
-		response.setEvents(new ArrayList<String>());
-		try {
-			PreparedStatement statement = locationsConnection
-					.prepareStatement("Insert into location(lat, lng, username, timestamp) values (?, ?, ?, ?)");
-			statement.setDouble(1, lat);
-			statement.setDouble(2, lng);
-			statement.setString(3, username);
-			statement
-					.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-			statement.execute();
-			Point[] extremePointsFrom = GeoLocationService
-					.getExtremePointsFrom(new Point(lat, lng), RADIUS);
-			PreparedStatement s = locationsConnection
-					.prepareStatement("select event_id, event.name as eventname, count(*) as count from location join (Select id, username, max(timestamp) from location  where ? <= lat and lat < ? and ? <= lng and lng < ? and timestamp > ? and username != ? group by id, username) s on location.id = s.id left join event on location.event_id = event.id group by event_id, event.name");
-			s.setDouble(1, extremePointsFrom[0].getLatitude());
-			s.setDouble(2, extremePointsFrom[0].getLongitude());
-			s.setDouble(3, extremePointsFrom[1].getLatitude());
-			s.setDouble(4, extremePointsFrom[1].getLongitude());
-			Calendar calendar = Calendar.getInstance();
-			calendar.add(Calendar.MINUTE, -MAX_PERIOD);
-			s.setTimestamp(5, new Timestamp(calendar.getTimeInMillis()));
-			s.setString(6, username);
-
-			s.execute();
-			ResultSet rs = s.getResultSet();
-			while (rs.next()) {
-				int event_id = rs.getInt("event_id");
-				String name = rs.getString("eventname");
-				int count = rs.getInt("count");
-				response.getEvents().add(name);
-				if (event_id == 0 && count >= MIN_COUNT) {
-					response.setCanCreateEvent(true);
-				}
-			}
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-		return response;
-	}
-
-	public void createEvent(double lat, double lng, String username,
-			String eventName) {
-
-		try {
-			PreparedStatement statement = usersConnection
-					.prepareStatement(
-							"Insert into locations(lat, lng, username, timestamp) values (?, ?, ?, ?)",
-							Statement.RETURN_GENERATED_KEYS);
-			statement.setDouble(1, lat);
-			statement.setDouble(2, lng);
-			statement.setString(3, username);
-			statement
-					.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-			statement.execute();
-			ResultSet res = statement.getGeneratedKeys();
-			long locationId = 0;
-			while (res.next()) {
-				locationId = res.getLong(1);
-			}
-			statement = usersConnection.prepareStatement(
-					"Insert into event(location_id, name) values(?, ?)",
-					Statement.RETURN_GENERATED_KEYS);
-			statement.setLong(1, locationId);
-			statement.setString(2, eventName);
-			statement.execute();
-			res = statement.getGeneratedKeys();
-			long eventId = 0;
-			while (res.next()) {
-				eventId = res.getLong(1);
-			}
-			statement = usersConnection
-					.prepareStatement("update location set event_id = ? where id=?");
-			statement.setLong(1, eventId);
-			statement.setLong(2, locationId);
-			statement.execute();
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	public boolean addUser(String username, String name, String pass) {
-		ResultSet rs = null;
-
-		try {
-
-			// check if user already exists
-			selectUser.setString(1, username);
-			selectUser.execute();
-			rs = selectUser.getResultSet();
-			if (rs.next()) {
-				System.out.println("User " + username
-						+ " already exists in database");
-				return false;
-			}
-			// create new user
-			else {
-				createUser.setString(1, username);
-				createUser.setString(2, name);
-				createUser.setString(3, pass);
-				createUser.executeUpdate();
-
-				System.out.println("Created user " + username
-						+ " in user database");
-				return true;
-			}
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	public User getUser(String username) {
-		try {
-			PreparedStatement prepareStatement = usersConnection
-					.prepareStatement("Select username, name from users where username=?");
-			prepareStatement.setString(1, username);
-			prepareStatement.execute();
-			ResultSet rs = prepareStatement.getResultSet();
-			while (rs.next()) {
-				User user = new User();
-				user.setName(rs.getString("name"));
-				user.setUsername(rs.getString("username"));
-				return user;
-			}
-			return null;
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
-	public void clearUserDB() {
-		try {
-			Statement ps = usersConnection.createStatement();
-			ps.addBatch("Delete from users");
-			ps.addBatch("Delete from userevent");
-			ps.addBatch("Delete from event");
-			ps.addBatch("Delete from location");
-			ps.executeBatch();
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-
-	}
-
-	public void clearLocationsDB() {
-		try {
-			Statement ps = locationsConnection.createStatement();
-			ps.addBatch("Delete from userevent");
-			ps.addBatch("Delete from event");
-			ps.addBatch("Delete from location");
-			ps.executeBatch();
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
-		}
-
 	}
 
 }
