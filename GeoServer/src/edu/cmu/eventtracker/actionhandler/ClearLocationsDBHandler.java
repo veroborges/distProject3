@@ -17,7 +17,6 @@ public class ClearLocationsDBHandler
 		try {
 			Statement ps = geoContext.getLocationsConnection()
 					.createStatement();
-			ps.addBatch("Delete from userevent");
 			ps.addBatch("Delete from event");
 			ps.addBatch("Delete from location");
 			ps.executeBatch();

@@ -2,7 +2,7 @@ package edu.cmu.eventtracker.action;
 
 import edu.cmu.eventtracker.dto.Event;
 
-public class CreateEventAction implements Action<Event> {
+public class CreateEventAction implements ReplicatableAction<Event> {
 	private double lat;
 	private double lng;
 	private String username;

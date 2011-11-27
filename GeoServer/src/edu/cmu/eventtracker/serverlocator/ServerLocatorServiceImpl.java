@@ -37,28 +37,30 @@ public class ServerLocatorServiceImpl extends HessianServlet
 	}
 
 	@Override
-	public String getUserShard(String username) {
+	public ShardResponse getUserShard(String username) {
 		ResultSet rs = null;
 
 		try {
 			int hash = username.hashCode();
 			PreparedStatement usersStatement = shardsConnection
-					.prepareStatement("select hostname from usershard join (Select max(nodeid) maxnode from usershard where nodeid <= ?) s on usershard.nodeid = maxnode");
+					.prepareStatement("select master, slave from usershard join (Select max(nodeid) maxnode from usershard where nodeid <= ?) s on usershard.nodeid = maxnode");
 
 			usersStatement.setInt(1, hash);
 			usersStatement.execute();
 			rs = usersStatement.getResultSet();
 
 			if (rs.next()) {
-				return rs.getString("hostname");
+				return new ShardResponse(rs.getString("master"),
+						rs.getString("slave"));
 			} else {
 				PreparedStatement usersMaxStatement = shardsConnection
-						.prepareStatement("Select max(nodeid) from usershard");
+						.prepareStatement("Select master, slave, max(nodeid) from usershard");
 
 				usersMaxStatement.execute();
 
 				if (rs.next()) {
-					return rs.getString("hostname");
+					return new ShardResponse(rs.getString("master"),
+							rs.getString("slave"));
 				}
 			}
 			return null;
@@ -108,13 +110,14 @@ public class ServerLocatorServiceImpl extends HessianServlet
 		}
 	}
 
-	public void addUserShard(int nodeid, String hostname) {
+	public void addUserShard(int nodeid, String master, String slave) {
 		try {
 			PreparedStatement createShard = shardsConnection
-					.prepareStatement("insert into usershard values(?, ?) ");
+					.prepareStatement("insert into usershard(nodeid, master, slave) values(?, ?, ?) ");
 
 			createShard.setInt(1, nodeid);
-			createShard.setString(2, hostname);
+			createShard.setString(2, master);
+			createShard.setString(3, slave);
 			createShard.execute();
 
 		} catch (SQLException e) {
@@ -147,6 +150,25 @@ public class ServerLocatorServiceImpl extends HessianServlet
 					.execute();
 			shardsConnection.prepareStatement("Delete from usershard")
 					.execute();
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	@Override
+	public ShardResponse findLocationShard(String hostname) {
+		try {
+			PreparedStatement ps = shardsConnection
+					.prepareStatement("Select master, slave from locationshard where master=? or slave=?");
+			ps.setString(1, hostname);
+			ps.setString(2, hostname);
+			ps.execute();
+			ResultSet rs = ps.getResultSet();
+			if (rs.next()) {
+				return new ShardResponse(rs.getString("master"),
+						rs.getString("slave"));
+			}
+			return null;
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}

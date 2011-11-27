@@ -1,5 +1,5 @@
 package edu.cmu.eventtracker.action;
 
-public class ClearLocationsDBAction implements Action<Void> {
+public class ClearLocationsDBAction implements Action<Void>, Syncronous {
 
 }

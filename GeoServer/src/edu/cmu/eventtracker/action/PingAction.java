@@ -2,7 +2,7 @@ package edu.cmu.eventtracker.action;
 
 import edu.cmu.eventtracker.dto.PingResponse;
 
-public class PingAction implements Action<PingResponse> {
+public class PingAction implements ReplicatableAction<PingResponse> {
 
 	private double lat;
 	private double lng;

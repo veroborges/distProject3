@@ -1,4 +1,5 @@
 package edu.cmu.eventtracker.geoserver;
+import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -8,6 +9,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
+import edu.cmu.eventtracker.serverlocator.ServerLocator;
+
 public class GeoServer {
 
 	public String driver = "org.apache.derby.jdbc.EmbeddedDriver";
@@ -15,7 +18,7 @@ public class GeoServer {
 	private int port;
 	private Server server;
 
-	public GeoServer(int port) {
+	public GeoServer(int port, boolean master, String serverLocatorURL) {
 		this.port = port;
 		try {
 
@@ -25,6 +28,8 @@ public class GeoServer {
 			context.addServlet(new ServletHolder(GeoServiceImpl.class), "/"
 					+ GeoService.class.getSimpleName());
 			context.setAttribute("PORT", port);
+			context.setAttribute("MASTER", master);
+			context.setAttribute("SERVER_LOCATOR", serverLocatorURL);
 			server.setHandler(context);
 			Class.forName(driver).newInstance();
 			try {
@@ -78,13 +83,16 @@ public class GeoServer {
 	}
 
 	public static void main(String[] args) {
+
 		try {
-			new GeoServer(9990).start();
+			String locatorURL = "http://"
+					+ InetAddress.getLocalHost().getHostName() + ":"
+					+ ServerLocator.SERVER_LOCATOR_PORT + "/";
+			new GeoServer(9990, true, locatorURL).start();
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
 		}
 	}
-
 	public void start() throws Exception {
 		server.start();
 	}
@@ -96,6 +104,11 @@ public class GeoServer {
 		} catch (SQLException e) {
 
 		}
+	}
+
+	public static String getURL(String hostname, int port) {
+		return "http://" + hostname + ":" + port + "/"
+				+ GeoService.class.getSimpleName();
 	}
 
 }

@@ -14,6 +14,7 @@ public class ServerLocator {
 	public String protocol = "jdbc:derby:";
 	private int port;
 	private Server server;
+	public static final int SERVER_LOCATOR_PORT = 8888;
 
 	public ServerLocator(int port) {
 		this.port = port;
@@ -43,15 +44,15 @@ public class ServerLocator {
 				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
-				.execute("CREATE TABLE LOCATIONSHARD (LNGMAX FLOAT NOT NULL,LATMIN FLOAT NOT NULL,LNGMIN FLOAT NOT NULL, LATMAX FLOAT NOT NULL, MASTER varchar(255) NOT NULL, SLAVE varchar(255), NAME varchar(255),PRIMARY KEY (LNGMAX,LATMIN,LNGMIN,LATMAX))");
+				.execute("CREATE TABLE LOCATIONSHARD (LNGMAX FLOAT NOT NULL,LATMIN FLOAT NOT NULL,LNGMIN FLOAT NOT NULL, LATMAX FLOAT NOT NULL, MASTER varchar(255) NOT NULL, SLAVE varchar(255) NOT NULL, NAME varchar(255),PRIMARY KEY (LNGMAX,LATMIN,LNGMIN,LATMAX))");
 		statement
-				.execute("CREATE TABLE USERSHARD (NODEID INTEGER NOT NULL, HOSTNAME varchar(255) NOT NULL,  PRIMARY KEY (NODEID))");
+				.execute("CREATE TABLE USERSHARD (NODEID INTEGER NOT NULL, MASTER varchar(255) NOT NULL, SLAVE varchar(255) NOT NULL, PRIMARY KEY (NODEID))");
 		conn.close();
 	}
 
 	public static void main(String[] args) {
 		try {
-			new ServerLocator(8888).start();
+			new ServerLocator(SERVER_LOCATOR_PORT).start();
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
 		}
@@ -68,6 +69,11 @@ public class ServerLocator {
 		} catch (SQLException e) {
 
 		}
+	}
+
+	public static String getURL(String hostname, int port) {
+		return "http://" + hostname + ":" + port + "/"
+				+ ServerLocatorService.class.getSimpleName();
 	}
 
 }
