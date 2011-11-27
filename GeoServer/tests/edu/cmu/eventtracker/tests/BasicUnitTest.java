@@ -9,7 +9,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.MalformedURLException;
-import java.util.Map.Entry;
 import java.util.Random;
 
 import org.junit.After;
@@ -66,7 +65,7 @@ public class BasicUnitTest {
 		locationService.addUserShard(0, serviceUrls[1]);
 	}
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testCreateUsers() throws Exception {
 		ServerLocatorService serviceLocator = getServiceLocator();
 		initUserShards(serviceLocator);
@@ -248,15 +247,10 @@ public class BasicUnitTest {
 			} else {
 				assertTrue(response.getEvents().size() == 2);
 				boolean found = false;
-				for (Entry<Event, Integer> entry : response.getEvents()
-						.entrySet()) {
-					if (entry.getKey() != null) {
-						assertEquals(entry.getKey().getId(), eventId);
-						assertEquals(eventParticipantCount,
-								(int) entry.getValue());
-						found = true;
-					}
-				}
+				Event event = response.getEvents().get(eventId);
+				assertEquals(event.getId(), eventId);
+				assertEquals(eventParticipantCount, event.getParticipantCount());
+				found = true;
 				assertTrue(found);
 				PingAction pingAction = new PingAction(lat, lng, username);
 				pingAction.setEventId(eventId);

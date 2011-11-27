@@ -5,7 +5,7 @@ import java.net.MalformedURLException;
 import com.caucho.hessian.client.HessianProxyFactory;
 
 import edu.cmu.eventtracker.geoserver.GeoService;
-import edu.cmu.eventtracker.geoserver.ServerLocatorService;
+import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
 public class GeoServerClient {
 

@@ -29,8 +29,25 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		try {
 			insertLocation(action.getUsername(), action.getLat(),
 					action.getLng(), action.getEventId(), geoContext);
-			HashMap<Event, Integer> closeByEvents = closeByEvents(
-					action.getLat(), action.getLng(), geoContext);
+			HashMap<Long, Event> closeByEvents = closeByEvents(action.getLat(),
+					action.getLng(), geoContext);
+			if (action.getEventId() != null) {
+				Event event = closeByEvents.get(action.getEventId());
+				if (event == null) {
+					throw new NullPointerException(
+							"Event with the given id was not found");
+				}
+				Point[] extremes = GeoLocationService.getExtremePointsFrom(
+						new Point(event.getLocation().getLat(), event
+								.getLocation().getLng()), RADIUS);
+				if (!(extremes[0].getLatitude() <= action.getLat()
+						&& extremes[0].getLongitude() <= action.getLng()
+						&& action.getLat() <= extremes[1].getLatitude() && action
+						.getLng() <= extremes[1].getLongitude())) {
+					throw new IllegalStateException(
+							"You are too far away from the original event");
+				}
+			}
 			response.setEvents(closeByEvents);
 			response.setCanCreateEvent(canCreateNewEvents(closeByEvents));
 		} catch (SQLException e) {
@@ -63,9 +80,9 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		}
 		return locationId;
 	}
-	public static HashMap<Event, Integer> closeByEvents(double lat, double lng,
+	public static HashMap<Long, Event> closeByEvents(double lat, double lng,
 			GeoServiceContext geoContext) throws SQLException {
-		HashMap<Event, Integer> closeByEvents = new HashMap<Event, Integer>();
+		HashMap<Long, Event> closeByEvents = new HashMap<Long, Event>();
 		Point[] extremePointsFrom = GeoLocationService.getExtremePointsFrom(
 				new Point(lat, lng), RADIUS);
 		PreparedStatement s = geoContext
@@ -87,20 +104,23 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		while (rs.next()) {
 			int count = rs.getInt("count");
 			long eventId = rs.getLong("event_id");
-
+			closeByEvents.put(eventId, getEvent(eventId, geoContext));
+			Event event;
 			if (eventId != 0) {
-				closeByEvents.put(getEvent(eventId, geoContext), count);
+				event = getEvent(eventId, geoContext);
 			} else {
-				closeByEvents.put(null, count);
+				event = new Event();
 			}
+			event.setParticipantCount(count);
+			closeByEvents.put(eventId, event);
 		}
 		return closeByEvents;
 	}
 
-	public static boolean canCreateNewEvents(
-			HashMap<Event, Integer> closeByEvents) {
-		Integer usersWithoutEvent = closeByEvents.get(null);
-		if (usersWithoutEvent != null && usersWithoutEvent >= MIN_COUNT) {
+	public static boolean canCreateNewEvents(HashMap<Long, Event> closeByEvents) {
+		Event usersWithoutEvent = closeByEvents.get(0L);
+		if (usersWithoutEvent != null
+				&& usersWithoutEvent.getParticipantCount() >= MIN_COUNT) {
 			return true;
 		} else {
 			return false;

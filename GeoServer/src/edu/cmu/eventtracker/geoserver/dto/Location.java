@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 public class Location implements Serializable {
 	private double id;
-	private double lng;
 	private double lat;
+	private double lng;
 	private String username;
 	private long eventId = 0; // default to null/0?
 
@@ -13,7 +13,7 @@ public class Location implements Serializable {
 
 	}
 
-	public Location(long id, double lng, double lat, String username,
+	public Location(long id, double lat, double lng, String username,
 			long eventId) {
 		this.setId(id);
 		this.lng = lng;

@@ -7,6 +7,7 @@ public class Event implements Serializable {
 	private long id;
 	private String name;
 	private Location location;
+	private int participantCount;
 
 	public Event() {
 	}
@@ -58,6 +59,14 @@ public class Event implements Serializable {
 		if (id != other.id)
 			return false;
 		return true;
+	}
+
+	public int getParticipantCount() {
+		return participantCount;
+	}
+
+	public void setParticipantCount(int participantCount) {
+		this.participantCount = participantCount;
 	}
 
 }

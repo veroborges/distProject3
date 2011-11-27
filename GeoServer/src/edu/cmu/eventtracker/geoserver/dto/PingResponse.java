@@ -5,20 +5,20 @@ import java.util.HashMap;
 
 public class PingResponse implements Serializable {
 
-	private HashMap<Event, Integer> events;
+	private HashMap<Long, Event> events;
 	private boolean canCreateEvent;
 
 	/**
 	 * @return the events
 	 */
-	public HashMap<Event, Integer> getEvents() {
+	public HashMap<Long, Event> getEvents() {
 		return events;
 	}
 	/**
 	 * @param events
 	 *            the events to set
 	 */
-	public void setEvents(HashMap<Event, Integer> events) {
+	public void setEvents(HashMap<Long, Event> events) {
 		this.events = events;
 	}
 	/**
