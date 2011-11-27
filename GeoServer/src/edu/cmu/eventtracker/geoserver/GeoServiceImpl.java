@@ -6,8 +6,8 @@ import javax.servlet.ServletException;
 
 import com.caucho.hessian.server.HessianServlet;
 
-import edu.cmu.eventtracker.geoserver.action.Action;
-import edu.cmu.eventtracker.geoserver.actionhandler.GeoServiceContext;
+import edu.cmu.eventtracker.action.Action;
+import edu.cmu.eventtracker.actionhandler.GeoServiceContext;
 
 public class GeoServiceImpl extends HessianServlet implements GeoService {
 

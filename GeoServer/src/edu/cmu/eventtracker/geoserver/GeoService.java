@@ -1,6 +1,6 @@
 package edu.cmu.eventtracker.geoserver;
 
-import edu.cmu.eventtracker.geoserver.action.Action;
+import edu.cmu.eventtracker.action.Action;
 
 public interface GeoService {
 

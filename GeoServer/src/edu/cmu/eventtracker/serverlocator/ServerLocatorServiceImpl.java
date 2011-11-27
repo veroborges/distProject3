@@ -10,14 +10,12 @@ import javax.servlet.ServletException;
 
 import com.caucho.hessian.server.HessianServlet;
 
+import edu.cmu.eventtracker.dto.ShardResponse;
+
 public class ServerLocatorServiceImpl extends HessianServlet
 		implements
 			ServerLocatorService {
-	public final String driver = "org.apache.derby.jdbc.EmbeddedDriver";
-	public final String protocol = "jdbc:derby:";
-	public PreparedStatement locationsStatement;
-	public PreparedStatement usersStatement;
-	public PreparedStatement usersMaxStatement;
+	private static final String protocol = "jdbc:derby:";
 
 	private Connection shardsConnection;
 
@@ -32,14 +30,6 @@ public class ServerLocatorServiceImpl extends HessianServlet
 		try {
 			shardsConnection = DriverManager.getConnection(protocol
 					+ "shardsDB" + port + ";create=true", null);
-			locationsStatement = shardsConnection
-					.prepareStatement("Select hostname, min((latmax-latmin) * (lngmax - lngmin)) from locationshard where latmin <= ? and ? < latmax and lngmin <= ? and ? < lngmax group by hostname, lngmin, lngmax, latmax, latmin");
-
-			usersStatement = shardsConnection
-					.prepareStatement("select hostname from usershard join (Select max(nodeid) maxnode from usershard where nodeid <= ?) s on usershard.nodeid = maxnode");
-
-			usersMaxStatement = shardsConnection
-					.prepareStatement("Select max(nodeid) from usershard");
 
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
@@ -52,6 +42,8 @@ public class ServerLocatorServiceImpl extends HessianServlet
 
 		try {
 			int hash = username.hashCode();
+			PreparedStatement usersStatement = shardsConnection
+					.prepareStatement("select hostname from usershard join (Select max(nodeid) maxnode from usershard where nodeid <= ?) s on usershard.nodeid = maxnode");
 
 			usersStatement.setInt(1, hash);
 			usersStatement.execute();
@@ -60,6 +52,9 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			if (rs.next()) {
 				return rs.getString("hostname");
 			} else {
+				PreparedStatement usersMaxStatement = shardsConnection
+						.prepareStatement("Select max(nodeid) from usershard");
+
 				usersMaxStatement.execute();
 
 				if (rs.next()) {
@@ -82,9 +77,12 @@ public class ServerLocatorServiceImpl extends HessianServlet
 	}
 
 	@Override
-	public String getLocationShard(double lat, double lng) {
+	public ShardResponse getLocationShard(double lat, double lng) {
 		ResultSet rs = null;
 		try {
+			PreparedStatement locationsStatement = shardsConnection
+					.prepareStatement("Select master, slave, min((latmax-latmin) * (lngmax - lngmin)) from locationshard where latmin <= ? and ? < latmax and lngmin <= ? and ? < lngmax group by master, slave, lngmin, lngmax, latmax, latmin");
+
 			locationsStatement.setDouble(1, lat);
 			locationsStatement.setDouble(2, lat);
 			locationsStatement.setDouble(3, lng);
@@ -92,8 +90,9 @@ public class ServerLocatorServiceImpl extends HessianServlet
 			locationsStatement.execute();
 			locationsStatement.setMaxRows(1);
 			rs = locationsStatement.getResultSet();
-			while (rs.next()) {
-				return rs.getString("hostname");
+			if (rs.next()) {
+				return new ShardResponse(rs.getString("master"),
+						rs.getString("slave"));
 			}
 			return null;
 		} catch (SQLException e) {
@@ -124,17 +123,18 @@ public class ServerLocatorServiceImpl extends HessianServlet
 	}
 
 	public void addLocationShard(double latmin, double lngmin, double latmax,
-			double lngmax, String hostname, String name) {
+			double lngmax, String master, String slave, String name) {
 		try {
 			PreparedStatement createShard = shardsConnection
-					.prepareStatement("insert into locationshard(latmin, lngmin, latmax, lngmax, hostname, name) values(?, ?, ?, ?, ?, ?) ");
+					.prepareStatement("insert into locationshard(latmin, lngmin, latmax, lngmax, master, slave, name) values(?, ?, ?, ?, ?, ?, ?) ");
 
 			createShard.setDouble(1, latmin);
 			createShard.setDouble(2, lngmin);
 			createShard.setDouble(3, latmax);
 			createShard.setDouble(4, lngmax);
-			createShard.setString(5, hostname);
-			createShard.setString(6, name);
+			createShard.setString(5, master);
+			createShard.setString(6, slave);
+			createShard.setString(7, name);
 			createShard.execute();
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);

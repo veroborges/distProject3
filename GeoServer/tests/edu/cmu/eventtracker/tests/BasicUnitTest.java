@@ -17,17 +17,18 @@ import org.junit.Test;
 
 import com.caucho.hessian.client.HessianProxyFactory;
 
+import edu.cmu.eventtracker.action.AddUserAction;
+import edu.cmu.eventtracker.action.ClearLocationsDBAction;
+import edu.cmu.eventtracker.action.ClearUsersDBAction;
+import edu.cmu.eventtracker.action.CreateEventAction;
+import edu.cmu.eventtracker.action.GetUserAction;
+import edu.cmu.eventtracker.action.PingAction;
+import edu.cmu.eventtracker.actionhandler.PingHandler;
+import edu.cmu.eventtracker.dto.Event;
+import edu.cmu.eventtracker.dto.PingResponse;
 import edu.cmu.eventtracker.geoserver.GeoServer;
 import edu.cmu.eventtracker.geoserver.GeoService;
-import edu.cmu.eventtracker.geoserver.action.AddUserAction;
-import edu.cmu.eventtracker.geoserver.action.ClearLocationsDBAction;
-import edu.cmu.eventtracker.geoserver.action.ClearUsersDBAction;
-import edu.cmu.eventtracker.geoserver.action.CreateEventAction;
-import edu.cmu.eventtracker.geoserver.action.GetUserAction;
-import edu.cmu.eventtracker.geoserver.action.PingAction;
-import edu.cmu.eventtracker.geoserver.actionhandler.PingHandler;
-import edu.cmu.eventtracker.geoserver.dto.Event;
-import edu.cmu.eventtracker.geoserver.dto.PingResponse;
+import edu.cmu.eventtracker.geoserver.GeoServiceFacade;
 import edu.cmu.eventtracker.serverlocator.ServerLocator;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
@@ -38,13 +39,14 @@ public class BasicUnitTest {
 	private Random gen = new Random();
 	private GeoServer[] servers;
 	private ServerLocator serverLocator;
-	private HessianProxyFactory factory;
 	private final int startPort = 9990;
+	private HessianProxyFactory factory;
 
 	@Before
 	public void before() throws Exception {
-		factory = new HessianProxyFactory();
 		startServerLocator();
+		factory = new HessianProxyFactory();
+		factory.setConnectTimeout(500);
 	}
 
 	@After
@@ -69,7 +71,7 @@ public class BasicUnitTest {
 	public void testCreateUsers() throws Exception {
 		ServerLocatorService serviceLocator = getServiceLocator();
 		initUserShards(serviceLocator);
-		startGeoServers(2);
+		startGeoServers(4);
 
 		int counter = 0;
 		String username = "";
@@ -94,12 +96,12 @@ public class BasicUnitTest {
 	@Test
 	public void testUserSharding() throws Exception {
 		// figure out URL for locator service, assume DNS will take care of that
-		startGeoServers(2);
+		startGeoServers(4);
 		ServerLocatorService locatorService = getServiceLocator();
 		initUserShards(locatorService);
 		GeoService[] geoServices = getGeoServiceConnections(2);
-		testInsertUser(factory, locatorService, "veronica", geoServices[0]);
-		testInsertUser(factory, locatorService, "anar", geoServices[1]);
+		testInsertUser(locatorService, "veronica", geoServices[0]);
+		testInsertUser(locatorService, "anar", geoServices[1]);
 	}
 
 	private void startServerLocator() throws Exception {
@@ -116,13 +118,18 @@ public class BasicUnitTest {
 						+ ServerLocatorService.class.getSimpleName());
 	}
 
-	private void testInsertUser(HessianProxyFactory factory,
-			ServerLocatorService locatorService, String user,
-			GeoService expectedServer) throws MalformedURLException {
+	private void testInsertUser(ServerLocatorService locatorService,
+			String user, GeoService expectedServer)
+			throws MalformedURLException {
 		getGeoServiceConnection(locatorService.getUserShard(user)).execute(
 				new AddUserAction(user, user, "pass"));
 		assertEquals(user, expectedServer.execute(new GetUserAction(user))
 				.getUsername());
+	}
+
+	private GeoService getGeoServiceConnection(String url)
+			throws MalformedURLException {
+		return (GeoService) factory.create(GeoService.class, url);
 	}
 
 	public String[] getGeoServiceURLS(int startPort, int count) {
@@ -144,11 +151,6 @@ public class BasicUnitTest {
 		return services;
 	}
 
-	public GeoService getGeoServiceConnection(String url)
-			throws MalformedURLException {
-		return (GeoService) factory.create(GeoService.class, url);
-	}
-
 	public void startGeoServers(int count) throws Exception {
 		servers = new GeoServer[count];
 		for (int i = 0; i < count; i++) {
@@ -163,7 +165,7 @@ public class BasicUnitTest {
 
 	@Test(timeout = 5000)
 	public void testLocationSharding() throws Exception {
-		startGeoServers(2);
+		startGeoServers(4);
 		ServerLocatorService locatorService = getServiceLocator();
 		initLocationShards(locatorService);
 		double lng = -74;
@@ -171,32 +173,32 @@ public class BasicUnitTest {
 		int count = 100;
 		for (int i = 0; i < count; i++) {
 			lat += .2;
-			getGeoServiceConnection(locatorService.getLocationShard(lat, lng))
+			new GeoServiceFacade(locatorService.getLocationShard(lat, lng))
 					.execute(new PingAction(lat, lng, "anar"));
 		}
 	}
 
 	public void initLocationShards(ServerLocatorService locationService) {
-		String[] serviceUrls = getGeoServiceURLS(9990, 2);
+		String[] serviceUrls = getGeoServiceURLS(9990, 4);
 		locationService.addLocationShard(-180, -180, 180, 180, serviceUrls[0],
-				"World");
+				serviceUrls[1], "World");
 		locationService.addLocationShard(40.69418, -74.11926, 40.88237,
-				-73.75122, serviceUrls[1], "New York");
+				-73.75122, serviceUrls[2], serviceUrls[3], "New York");
 	}
 
 	@Test
 	// (timeout = 5000)
 	public void testEventCreationOffer() throws Exception {
-		startGeoServers(2);
+		startGeoServers(4);
 		ServerLocatorService locatorService = getServiceLocator();
 		initLocationShards(locatorService);
 		double lng = 40.8;
 		double lat = -74;
 		int count = PingHandler.MIN_COUNT + 5;
 		for (int i = 0; i < count; i++) {
-			PingResponse response = getGeoServiceConnection(
-					locatorService.getLocationShard(lat, lng)).execute(
-					new PingAction(lat, lng, "user" + i));
+			PingResponse response = new GeoServiceFacade(
+					locatorService.getLocationShard(lat, lng))
+					.execute(new PingAction(lat, lng, "user" + i));
 			if (i < PingHandler.MIN_COUNT - 1) {
 				assertFalse(response.canCreateEvent());
 			} else {
@@ -208,7 +210,7 @@ public class BasicUnitTest {
 	@Test
 	// (timeout = 5000)
 	public void testEventCreation() throws Exception {
-		startGeoServers(2);
+		startGeoServers(4);
 		ServerLocatorService locatorService = getServiceLocator();
 		initLocationShards(locatorService);
 		double lng = 40.8;
@@ -218,18 +220,17 @@ public class BasicUnitTest {
 		int eventParticipantCount = 0;
 		for (int i = 0; i < count; i++) {
 			String username = "user" + i;
-			PingResponse response = getGeoServiceConnection(
-					locatorService.getLocationShard(lat, lng)).execute(
-					new PingAction(lat, lng, username));
+			PingResponse response = new GeoServiceFacade(
+					locatorService.getLocationShard(lat, lng))
+					.execute(new PingAction(lat, lng, username));
 
 			if (i < PingHandler.MIN_COUNT - 1) {
 				assertFalse(response.canCreateEvent());
 				boolean exceptionThrown = false;
 				try {
-					getGeoServiceConnection(
-							locatorService.getLocationShard(lat, lng)).execute(
-							new CreateEventAction(lat, lng, username,
-									"TestEvent"));
+					new GeoServiceFacade(locatorService.getLocationShard(lat,
+							lng)).execute(new CreateEventAction(lat, lng,
+							username, "TestEvent"));
 					assert false : "this line should not be executed";
 				} catch (Throwable ex) {
 					assertTrue(ex instanceof IllegalStateException);
@@ -238,9 +239,10 @@ public class BasicUnitTest {
 				assertTrue(exceptionThrown);
 			} else if (i == PingHandler.MIN_COUNT - 1) {
 				assertTrue(response.canCreateEvent());
-				Event event = getGeoServiceConnection(
-						locatorService.getLocationShard(lat, lng)).execute(
-						new CreateEventAction(lat, lng, username, "TestEvent"));
+				Event event = new GeoServiceFacade(
+						locatorService.getLocationShard(lat, lng))
+						.execute(new CreateEventAction(lat, lng, username,
+								"TestEvent"));
 				assertNotNull(event);
 				eventId = event.getId();
 				eventParticipantCount = 1;
@@ -254,9 +256,8 @@ public class BasicUnitTest {
 				assertTrue(found);
 				PingAction pingAction = new PingAction(lat, lng, username);
 				pingAction.setEventId(eventId);
-				getGeoServiceConnection(
-						locatorService.getLocationShard(lat, lng)).execute(
-						pingAction);
+				new GeoServiceFacade(locatorService.getLocationShard(lat, lng))
+						.execute(pingAction);
 				eventParticipantCount++;
 			}
 		}
