@@ -1,24 +1,24 @@
 package edu.cmu.eventtracker.dto;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.ArrayList;
 
 public class PingResponse implements Serializable {
 
-	private HashMap<Long, Event> events;
+	private ArrayList<Event> events;
 	private boolean canCreateEvent;
 
 	/**
 	 * @return the events
 	 */
-	public HashMap<Long, Event> getEvents() {
+	public ArrayList<Event> getEvents() {
 		return events;
 	}
 	/**
 	 * @param events
 	 *            the events to set
 	 */
-	public void setEvents(HashMap<Long, Event> events) {
+	public void setEvents(ArrayList<Event> events) {
 		this.events = events;
 	}
 	/**

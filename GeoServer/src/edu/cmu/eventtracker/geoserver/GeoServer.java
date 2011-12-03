@@ -64,6 +64,7 @@ public class GeoServer {
 				.execute("ALTER TABLE LOCATION ADD CONSTRAINT FK_LOCATION_EVENT_id FOREIGN KEY (EVENT_id) REFERENCES EVENT (id) ON DELETE CASCADE ON UPDATE RESTRICT");
 		conn.close();
 	}
+
 	private void initLocationsDB() throws SQLException {
 		Connection conn = DriverManager.getConnection(protocol + "locationsDB"
 				+ port + ";create=true", null);
@@ -93,6 +94,7 @@ public class GeoServer {
 			throw new IllegalStateException(e);
 		}
 	}
+
 	public void start() throws Exception {
 		server.start();
 	}

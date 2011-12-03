@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 
@@ -48,7 +49,7 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 							"You are too far away from the original event");
 				}
 			}
-			response.setEvents(closeByEvents);
+			response.setEvents(new ArrayList<Event>(closeByEvents.values()));
 			response.setCanCreateEvent(canCreateNewEvents(closeByEvents));
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);

@@ -260,7 +260,13 @@ public class BasicUnitTest {
 			} else {
 				assertTrue(response.getEvents().size() == 2);
 				boolean found = false;
-				Event event = response.getEvents().get(eventId);
+				Event event = null;
+				for (Event e : response.getEvents()) {
+					if (e.getId() == eventId) {
+						event = e;
+						break;
+					}
+				}
 				assertEquals(event.getId(), eventId);
 				assertEquals(eventParticipantCount, event.getParticipantCount());
 				found = true;
@@ -273,4 +279,5 @@ public class BasicUnitTest {
 			}
 		}
 	}
+
 }
