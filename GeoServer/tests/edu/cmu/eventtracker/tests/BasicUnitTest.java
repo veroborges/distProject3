@@ -188,8 +188,11 @@ public class BasicUnitTest {
 		for (int i = 0; i < count; i++) {
 			GeoService connection = getGeoServiceConnection(GeoServer.getURL(
 					addr.getHostName(), startPort + i));
-			connection.execute(new ClearLocationsDBAction());
-			connection.execute(new ClearUsersDBAction());
+			if (i % 2 == 0) { // execute only on masters, the slaves will be
+								// replicated
+				connection.execute(new ClearLocationsDBAction());
+				connection.execute(new ClearUsersDBAction());
+			}
 		}
 	}
 

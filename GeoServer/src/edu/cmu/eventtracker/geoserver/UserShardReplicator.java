@@ -4,6 +4,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import edu.cmu.eventtracker.action.ReplicationAction;
 import edu.cmu.eventtracker.action.UserShardAction;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorCache;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
@@ -27,7 +28,7 @@ public class UserShardReplicator extends Thread {
 		try {
 			while ((action = actionQueue.take()) != null) {
 				serverLocatorCache.getUserShardServer(action.getUsername())
-						.execute(action.getAction());
+						.execute(new ReplicationAction(action.getAction()));
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();

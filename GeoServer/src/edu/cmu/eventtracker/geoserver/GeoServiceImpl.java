@@ -11,6 +11,7 @@ import java.util.HashMap;
 
 import javax.servlet.ServletException;
 
+import com.caucho.hessian.client.HessianConnectionException;
 import com.caucho.hessian.client.HessianProxyFactory;
 import com.caucho.hessian.server.HessianServlet;
 
@@ -27,6 +28,8 @@ import edu.cmu.eventtracker.action.InsertEventAction;
 import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.action.PingAction;
+import edu.cmu.eventtracker.action.ReadOnlyAction;
+import edu.cmu.eventtracker.action.ReplicationAction;
 import edu.cmu.eventtracker.actionhandler.ActionHandler;
 import edu.cmu.eventtracker.actionhandler.AddUserHandler;
 import edu.cmu.eventtracker.actionhandler.BatchHandler;
@@ -41,6 +44,7 @@ import edu.cmu.eventtracker.actionhandler.InsertEventHandler;
 import edu.cmu.eventtracker.actionhandler.InsertLocationHandler;
 import edu.cmu.eventtracker.actionhandler.LocationHeartbeatHandler;
 import edu.cmu.eventtracker.actionhandler.PingHandler;
+import edu.cmu.eventtracker.actionhandler.ReplicationHandler;
 import edu.cmu.eventtracker.dto.ShardResponse;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
@@ -120,25 +124,28 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				new InsertEventHandler());
 		getActionHandlerMap().put(BatchAction.class, new BatchHandler());
 		getActionHandlerMap().put(PingAction.class, new PingHandler());
+		getActionHandlerMap().put(ReplicationAction.class,
+				new ReplicationHandler());
 	}
 
 	@Override
 	public <A extends Action<R>, R> R execute(A action) {
 		boolean commit = true;
 		GeoServiceContext context = new GeoServiceContext(this);
-		// if (!(action instanceof ReadOnlyAction) && !master) {
-		// Boolean attribute = (Boolean) getServletContext().getAttribute(
-		// SLAVE_FAILOVER);
-		// if (attribute == null || !attribute) {
-		// try {
-		// otherGeoService.execute(new PingAction());
-		// throw new IllegalStateException(
-		// "Can't query slave for mutable operations when master is up");
-		// } catch (HessianConnectionException e) {
-		// getServletContext().setAttribute(SLAVE_FAILOVER, true);
-		// }
-		// }
-		// }
+		if (!master && !(action instanceof ReplicationAction)
+				&& !(action instanceof ReadOnlyAction)) {
+			Boolean attribute = (Boolean) getServletContext().getAttribute(
+					SLAVE_FAILOVER);
+			if (attribute == null || !attribute) {
+				try {
+					otherGeoService.execute(new PingAction());
+					throw new IllegalStateException(
+							"Can't query slave for mutable operations when master is up");
+				} catch (HessianConnectionException e) {
+					getServletContext().setAttribute(SLAVE_FAILOVER, true);
+				}
+			}
+		}
 
 		try {
 			return context.execute(action);
