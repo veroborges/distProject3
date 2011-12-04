@@ -57,11 +57,11 @@ public class GeoServer {
 		Connection conn = DriverManager.getConnection(protocol + "usersDB"
 				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
-		statement
-				.execute("CREATE TABLE EVENT (id CHAR(36) not null, NAME varchar(255) DEFAULT NULL, TIMESTAMP timestamp DEFAULT NULL, PRIMARY KEY (id))");
+		// statement
+		// .execute("CREATE TABLE EVENT (id CHAR(36) not null, NAME varchar(255) DEFAULT NULL, TIMESTAMP timestamp DEFAULT NULL, PRIMARY KEY (id))");
 
 		statement
-				.execute("CREATE TABLE LOCATION (  ID CHAR(36) not null,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_ID CHAR(36) DEFAULT NULL,  PRIMARY KEY (ID), FOREIGN KEY (EVENT_ID) REFERENCES EVENT (id) ON DELETE CASCADE ON UPDATE RESTRICT) ");
+				.execute("CREATE TABLE LOCATION (  ID CHAR(36) not null,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_ID CHAR(36) DEFAULT NULL,  PRIMARY KEY (ID)) ");
 
 		statement
 				.execute("CREATE TABLE USERS (USERNAME varchar(255) NOT NULL, NAME varchar(255) DEFAULT NULL, PASSWORD varchar(255) DEFAULT NULL,  PRIMARY KEY (USERNAME))");

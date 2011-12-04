@@ -1,5 +1,6 @@
 package edu.cmu.eventtracker.actionhandler;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -7,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.cmu.eventtracker.action.InsertLocationAction;
+import edu.cmu.eventtracker.action.UserShardAction;
 import edu.cmu.eventtracker.dto.Location;
 
 public class InsertLocationHandler
@@ -17,10 +19,14 @@ public class InsertLocationHandler
 	public Void performAction(InsertLocationAction action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		try {
-			PreparedStatement statement = geoContext
-					.getLocationsConnection()
-					.prepareStatement(
-							"Insert into location(id, lat, lng, username, timestamp, event_id) values (?, ?, ?, ?, ?, ?)");
+			Connection connection;
+			if (action.isForUserShard()) {
+				connection = geoContext.getUsersConnection();
+			} else {
+				connection = geoContext.getLocationsConnection();
+			}
+			PreparedStatement statement = connection
+					.prepareStatement("Insert into location(id, lat, lng, username, timestamp, event_id) values (?, ?, ?, ?, ?, ?)");
 
 			Location location = action.getLocation();
 			statement.setString(1, location.getId());
@@ -34,10 +40,27 @@ public class InsertLocationHandler
 			} else {
 				statement.setString(6, location.getEventId());
 			}
+			Logger.getLogger("GeoServer").log(
+					Level.INFO,
+					"Inserting location to "
+							+ geoContext.getService().getUrl()
+							+ " as "
+							+ (geoContext.getService().isMaster()
+									? "master"
+									: "slave")
+							+ " to "
+							+ (action.isForUserShard()
+									? "user db"
+									: "location db") + " " + location.getId());
 			statement.execute();
 
-			Logger.getLogger("GeoServer").log(Level.INFO,
-					"Inserting location " + location.getId());
+			if (!action.isForUserShard()) {
+				InsertLocationAction locationAction = new InsertLocationAction(
+						action.getLocation());
+				locationAction.setForUserShard(true);
+				geoContext.addUserShardAction(new UserShardAction(
+						locationAction, action.getLocation().getUsername()));
+			}
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}

@@ -5,6 +5,7 @@ import edu.cmu.eventtracker.dto.Location;
 public class InsertLocationAction implements ReplicatableAction<Void> {
 
 	private Location location;
+	private boolean forUserShard;
 
 	public InsertLocationAction() {
 
@@ -20,5 +21,13 @@ public class InsertLocationAction implements ReplicatableAction<Void> {
 
 	public void setLocation(Location location) {
 		this.location = location;
+	}
+
+	public boolean isForUserShard() {
+		return forUserShard;
+	}
+
+	public void setForUserShard(boolean forUserShard) {
+		this.forUserShard = forUserShard;
 	}
 }

@@ -6,6 +6,7 @@ import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.ServletException;
@@ -51,6 +52,8 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	private ServerLocatorService locatorService;
 	private GeoService otherGeoService;
 	private Replicator replicator;
+	private UserShardReplicator userShardReplicator;
+	private String url;
 
 	@Override
 	public void init() throws ServletException {
@@ -61,13 +64,13 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				"SERVER_LOCATOR");
 		try {
 			usersConnection = DriverManager.getConnection(protocol + "usersDB"
-					+ port + ";create=true", null);
+					+ port, null);
 			locationsConnection = DriverManager.getConnection(protocol
-					+ "locationsDB" + port + ";create=true", null);
+					+ "locationsDB" + port, null);
 			usersConnection.setAutoCommit(false);
 			locationsConnection.setAutoCommit(false);
-			String url = GeoServer.getURL(InetAddress.getLocalHost()
-					.getHostName(), port);
+			url = GeoServer.getURL(InetAddress.getLocalHost().getHostName(),
+					port);
 			HessianProxyFactory factory = new HessianProxyFactory();
 			factory.setConnectTimeout(TIMEOUT);
 			factory.setReadTimeout(TIMEOUT);
@@ -83,6 +86,10 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				otherGeoService = (GeoService) factory.create(GeoService.class,
 						locationShard.getMaster());
 			}
+			ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
+			services.add(locatorService);
+			userShardReplicator = new UserShardReplicator(master, services);
+			getUserShardReplicator().start();
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		} catch (UnknownHostException e) {
@@ -128,6 +135,8 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 						try {
 							replicator.replicateAction(new BatchAction(context
 									.getActionLog()));
+							userShardReplicator.replicateActions(context
+									.getUserShardActionLog());
 						} catch (InterruptedException e) {
 							throw new IllegalStateException(e);
 						}
@@ -163,6 +172,14 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 
 	public Connection getLocationsConnection() {
 		return locationsConnection;
+	}
+
+	public UserShardReplicator getUserShardReplicator() {
+		return userShardReplicator;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 }

@@ -9,11 +9,13 @@ import edu.cmu.eventtracker.action.Action;
 import edu.cmu.eventtracker.action.BatchAction;
 import edu.cmu.eventtracker.action.ReplicatableAction;
 import edu.cmu.eventtracker.action.Synchronous;
+import edu.cmu.eventtracker.action.UserShardAction;
 import edu.cmu.eventtracker.geoserver.GeoServiceImpl;
 
 public class GeoServiceContext implements ActionContext {
 
 	private final ArrayList<ReplicatableAction<?>> actionLog = new ArrayList<ReplicatableAction<?>>();
+	private final ArrayList<UserShardAction> userShardActionLog = new ArrayList<UserShardAction>();
 	private final GeoServiceImpl service;
 
 	public GeoServiceContext(GeoServiceImpl service) {
@@ -55,6 +57,10 @@ public class GeoServiceContext implements ActionContext {
 		return response;
 	}
 
+	public void addUserShardAction(UserShardAction action) {
+		getUserShardActionLog().add(action);
+	}
+
 	public ArrayList<ReplicatableAction<?>> getActionLog() {
 		return actionLog;
 	}
@@ -65,6 +71,14 @@ public class GeoServiceContext implements ActionContext {
 
 	public Connection getLocationsConnection() {
 		return service.getLocationsConnection();
+	}
+
+	public GeoServiceImpl getService() {
+		return service;
+	}
+
+	public ArrayList<UserShardAction> getUserShardActionLog() {
+		return userShardActionLog;
 	}
 
 }
