@@ -3,6 +3,7 @@
 	<name>EventTrackerWebApp</name>
 	<comment></comment>
 	<projects>
+		<project>GeoServer</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
