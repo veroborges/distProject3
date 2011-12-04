@@ -15,9 +15,7 @@
 <script type="text/javascript">
   var map;
   var markers;
-  var markerCounter;
-  var events;
-  
+  var markerCounter;  
   
   function initialize() {
     var latlng = new google.maps.LatLng(40.4468314, -79.9479933);
@@ -37,25 +35,25 @@
     });
   }
 
-/*   function timedPing(markerId){
+function timedPing(markerId){
+  var marker = markers[markerId];
+  var lng = marker.getPosition().lng();
+  var lat = marker.getPosition().lat();
+  console.log("user:" + marker.username + " lng:" + lng + " lat:" + lat);
 
-  marker = markers[markerId];
-  t=setTimeout("timedPing(markerId)",1000);
+  t=setTimeout("timedPing(" + markerId +")",10000);
 
-  $.getJSON('EventTrackerServlet', function(data) { //add parameters to pass (lat, lng, eventid, username)
-	$.each(data, function(i, event) {
-		if (event.id == null && event.location == null){
+  $.getJSON('EventTrackerServlet',  {pUser : marker.username, pLat: lat, pLng: lng, pEventId: marker.eventid}, function(data) {
+		console.log(data);
+	  if (data.canCreateEvent == true){
 			marker.canCreate = true;
 		}
-		else{
-      	  marker.events.push(event);
-		}      
-	});
-  
-	  updateInfoWindow(markerCounter);
+      
+	  marker.events = data.events;   
+	  updateInfoWindow(markerId);
   });
   
-  } */
+ }
 
   function addUserMarker(latlng){
 	  var marker = new google.maps.Marker({
@@ -65,7 +63,8 @@
 		    username: null,
 		    canCreate: false,
 		    events: null,
-		    eventid: null
+		    eventid: null,
+		    infoWindow: new google.maps.InfoWindow()
 		  });
 	  
 	  markers[markerCounter] = marker;
@@ -76,77 +75,80 @@
     }
   
   function updateInfoWindow(markerId){
-	  marker = markers[markerId];
+	  var marker = markers[markerId];
 	  var html;
-	  var infoWindow = new google.maps.InfoWindow();
 	  
 	  if (marker.username == null){
-		  html = "<form id='newUser'><table>" +
-	      "<tr><td>Username:</td> <td><input type='text' id='username'/> </td> </tr>" +
-	      "<tr><td>Name:</td> <td><input type='text' id='name'/> </td> </tr>" +
-	      "<tr><td>Password:</td> <td><input type='text' id='pwd'/> </td> </tr>" +
+		  html = "<form id='newUserF'>" +
+	      "Username:<br/><input type='text' id='username'/> <br/><br/>" +
+	      "Name:<br/><input type='text' id='name'/> <br/><br/>" +
+	      "Password:<br/><input type='text' id='pwd'/><br/><br/>" +
 	      "<input type='hidden' id='markerId' value='" + markerId + "'/>" +
-	      "<tr><td></td><td><input type='button' value='Save' onclick='saveData(newUser)'/></td></tr>"+
-	      + "</table></form>";
+	      "<input type='button' value='Save' onclick='saveData(newUserF)'/>"+
+	      + "</form>";
 	  }
-	  
-	  else if (marker.canCreate == false && marker.events.length > 0){
-		  html = "<table>" +
-	      "<tr><td>Type:</td> <td><select id='joinEvent'>" +
+	  else if (marker.canCreate == true){
+		  html = "<form id='newEventF'>" +
+	      "Event Name:<br/><input type='text' id='eventname'/><br/><br/>" +
+	      "<input type='hidden' id='markerId' value='" + markerId + "'/>" +
+	      "<input type='button' value='Create New Event' onclick='createEvent(newEventF)'/>" +
+	      "</form>";
+	  }else if (marker.canCreate == false && marker.events.length > 0){
+		  html = "<form id='joinEventF'>" +
+	      "Type:<select id='eventDrop'>" +
           "<option value='none' SELECTED>none</option>"
          
           for(var i = 0; i < marker.events.length(); i++){
           	html += "<option value='" + marker.events[i].id + "'>" +  marker.events[i].name + "</option>"
           }
           
-          html += "</select> </td></tr>" +
+          html += "</select><br/><br/>" +
 	      "<input type='hidden' id='markerId' value='" + markerId + "'/>" +
-	      "<tr><td></td><td><input type='button' value='Create New Event' onclick='saveEvent(markerId)'/></td></tr>";
-	  }
-	  else if (marker.canCreate == true){
-		  html = "<table>" +
-	      "<tr><td>Event Name:</td> <td><input type='text' id='eventname'/> </td> </tr>" +
-	      "<input type='hidden' id='markerId' value='" + markerId + "'/>" +
-	      "<tr><td></td><td><input type='button' value='Create New Event' onclick='createEvent(markerId)'/>" +
-	      "</td></tr>";
+	      "<input type='button' value='Create New Event' onclick='saveEvent(joinEventF)'/></form>";
+	  }else{
+		  html = marker.username;
 	  }
 	  
 	google.maps.event.addListener(marker, "click", function() {
-          infoWindow.setContent(html);
-          infoWindow.open(map, marker);
+          marker.infoWindow.setContent(html);
+          marker.infoWindow.open(map, marker);
     });
   }
   
   function saveData(form) { 
 	  console.log(form.markerId.value);
-	  var marker = markers[parseInt(form.markerId.value)];
+	  var markerIdNum = parseInt(form.markerId.value);
+	  var marker = markers[markerIdNum];
 
-      $.post('EventTrackerServlet', {mUser : form.username.value, mName: form.name.value, mPass: form.pwd.value}, function(data) { //add form name to pass or the parameters
-    	    marker.closeInfoWindow();
-            document.getElementById("message").innerHTML = "User" + data + "Added";
-            console.log(data);
-            //set marker username
-            timedPing(markerId);
+      $.post('EventTrackerServlet', {mUser : form.username.value, mName: form.name.value, mPass: form.pwd.value}, function(data) { 
+          	console.log(data);
+      		$('#message').html("User" + data + "Added");
+            marker.username = data;            
+            marker.infoWindow.close();
+            marker.setTitle(marker.username);
+            timedPing(markerIdNum);
     	});
     }
-	 
-   
-/*   function addUser(form){
-	  console.log(form);
-	  var lat = form.lat.value;
-	  var lon = form.lon.value;
-	  var point = new google.maps.LatLng(form.lat.value, form.lon.value);
-	  addMarker(point, "You are here!", "userMarker");
-	
-	  timedPing(form.username.value, lat, lon);
-  } */
+  function createEvent(form) { 
+	  console.log(form.markerId.value);
+	  var markerIdNum = parseInt(form.markerId.value);
+	  var marker = markers[markerIdNum];
+	  var lng = marker.getPosition().lng();
+	  var lat = marker.getPosition().lat();
+	  
+	  console.log("user:" + marker.username + " lng:" + lng + " lat:" + lat + "new event:" + form.eventname.value);
 
+	  $.post('EventTrackerServlet',  {cUser : marker.username, cLat: lat, cLng: lng, cEventName: form.eventname.value}, function(data) {
+		   console.log(data);
+		   updateInfoWindow(markerIdNum);
+	  });
+    }
+	 
 </script>
 	<body onload="initialize()">
 		<h1>Event Tracker</h1>
 
 		<div id="map_canvas" style="width:500px; height:500px"></div>	
-<!-- 		 <div id="message"></div>
-		<div id=event_list></div> -->
+   		 <div id="message"></div>
 	</body>
 </html>

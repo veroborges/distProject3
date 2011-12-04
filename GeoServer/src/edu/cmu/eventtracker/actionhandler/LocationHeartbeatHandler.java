@@ -20,8 +20,9 @@ import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
 
-public class LocationHeartbeatHandler implements
-		ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
+public class LocationHeartbeatHandler
+		implements
+			ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
 
 	public static final double RADIUS = 0.5; // km
 	public static final int MIN_COUNT = 4;
@@ -77,14 +78,15 @@ public class LocationHeartbeatHandler implements
 						"select event_id, event.name as eventname, count(*) as count from location join "
 								+ "(Select id, username, max(timestamp) from location  where ? <= lat and lat < ? and ? <= lng and lng < ? and timestamp > ? group by id, username)"
 								+ " s on location.id = s.id left join event on location.event_id = event.id group by event_id, event.name");
+		System.out.println(lat + " " + lng);
+		System.out.println(Arrays.toString(extremePointsFrom));
 		s.setDouble(1, extremePointsFrom[0].getLatitude());
-		s.setDouble(2, extremePointsFrom[0].getLongitude());
-		s.setDouble(3, extremePointsFrom[1].getLatitude());
+		s.setDouble(2, extremePointsFrom[1].getLatitude());
+		s.setDouble(3, extremePointsFrom[0].getLongitude());
 		s.setDouble(4, extremePointsFrom[1].getLongitude());
 		Calendar calendar = Calendar.getInstance();
 		calendar.add(Calendar.MINUTE, -MAX_PERIOD);
-		s.setTimestamp(5, new Timestamp(calendar.getTimeInMillis()));
-
+		s.setTimestamp(5, new Timestamp(calendar.getTime().getTime()));
 		s.execute();
 		ResultSet rs = s.getResultSet();
 		while (rs.next()) {
