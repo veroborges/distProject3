@@ -25,6 +25,7 @@ import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.action.GetUserLocations;
 import edu.cmu.eventtracker.action.InsertEventAction;
 import edu.cmu.eventtracker.action.InsertLocationAction;
+import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.action.PingAction;
 import edu.cmu.eventtracker.actionhandler.ActionHandler;
 import edu.cmu.eventtracker.actionhandler.AddUserHandler;
@@ -38,6 +39,7 @@ import edu.cmu.eventtracker.actionhandler.GetUserHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserLocationsHandler;
 import edu.cmu.eventtracker.actionhandler.InsertEventHandler;
 import edu.cmu.eventtracker.actionhandler.InsertLocationHandler;
+import edu.cmu.eventtracker.actionhandler.LocationHeartbeatHandler;
 import edu.cmu.eventtracker.actionhandler.PingHandler;
 import edu.cmu.eventtracker.dto.ShardResponse;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
@@ -45,6 +47,7 @@ import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 public class GeoServiceImpl extends HessianServlet implements GeoService {
 
 	private static final String protocol = "jdbc:derby:";
+	private static final String SLAVE_FAILOVER = null;
 	private final HashMap<Class<? extends Action<?>>, ActionHandler<?, ?>> actionHandlerMap = new HashMap<Class<? extends Action<?>>, ActionHandler<?, ?>>();
 	private Connection usersConnection;
 	private Connection locationsConnection;
@@ -107,7 +110,8 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				new GetUserEventsHandler());
 		getActionHandlerMap().put(GetUserLocations.class,
 				new GetUserLocationsHandler());
-		getActionHandlerMap().put(PingAction.class, new PingHandler());
+		getActionHandlerMap().put(LocationHeartbeatAction.class,
+				new LocationHeartbeatHandler());
 		getActionHandlerMap().put(CreateEventAction.class,
 				new CreateEventHandler());
 		getActionHandlerMap().put(InsertLocationAction.class,
@@ -115,12 +119,27 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		getActionHandlerMap().put(InsertEventAction.class,
 				new InsertEventHandler());
 		getActionHandlerMap().put(BatchAction.class, new BatchHandler());
+		getActionHandlerMap().put(PingAction.class, new PingHandler());
 	}
 
 	@Override
 	public <A extends Action<R>, R> R execute(A action) {
 		boolean commit = true;
 		GeoServiceContext context = new GeoServiceContext(this);
+		// if (!(action instanceof ReadOnlyAction) && !master) {
+		// Boolean attribute = (Boolean) getServletContext().getAttribute(
+		// SLAVE_FAILOVER);
+		// if (attribute == null || !attribute) {
+		// try {
+		// otherGeoService.execute(new PingAction());
+		// throw new IllegalStateException(
+		// "Can't query slave for mutable operations when master is up");
+		// } catch (HessianConnectionException e) {
+		// getServletContext().setAttribute(SLAVE_FAILOVER, true);
+		// }
+		// }
+		// }
+
 		try {
 			return context.execute(action);
 		} catch (RuntimeException ex) {
@@ -154,6 +173,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			}
 		}
 	}
+
 	public HashMap<Class<? extends Action<?>>, ActionHandler<?, ?>> getActionHandlerMap() {
 		return actionHandlerMap;
 	}

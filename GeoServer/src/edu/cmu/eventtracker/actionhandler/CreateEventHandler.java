@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.InsertEventAction;
-import edu.cmu.eventtracker.action.PingAction;
+import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 
@@ -17,7 +17,7 @@ public class CreateEventHandler
 	public Event performAction(CreateEventAction action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		try {
-			if (!PingHandler.canCreateNewEvents(PingHandler.closeByEvents(
+			if (!LocationHeartbeatHandler.canCreateNewEvents(LocationHeartbeatHandler.closeByEvents(
 					action.getEvent().getLocation().getLat(), action.getEvent()
 							.getLocation().getLng(), geoContext))) {
 				throw new IllegalStateException("Can't create new events yet");
@@ -26,9 +26,9 @@ public class CreateEventHandler
 			action.getEvent().setId(UUID.randomUUID().toString());
 			location.setEventId(action.getEvent().getId());
 			context.execute(new InsertEventAction(action.getEvent()));
-			context.execute(new PingAction(location));
+			context.execute(new LocationHeartbeatAction(location));
 
-			return PingHandler.getEvent(action.getEvent().getId(), geoContext);
+			return LocationHeartbeatHandler.getEvent(action.getEvent().getId(), geoContext);
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}

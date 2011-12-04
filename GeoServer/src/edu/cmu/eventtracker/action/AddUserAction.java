@@ -1,6 +1,6 @@
 package edu.cmu.eventtracker.action;
 
-public class AddUserAction implements Action<Boolean>, Synchronous {
+public class AddUserAction implements Synchronous, ReplicatableAction<Boolean> {
 	private String username;
 	private String name;
 	private String password;

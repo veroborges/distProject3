@@ -4,7 +4,7 @@ import java.net.MalformedURLException;
 
 import com.caucho.hessian.client.HessianProxyFactory;
 
-import edu.cmu.eventtracker.action.PingAction;
+import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.serverlocator.ServerLocator;
@@ -21,7 +21,7 @@ public class GeoServerClient {
 		ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url);
 		String master = locatorService.getUserShard("testuser").getMaster();
 		GeoService geoService = (GeoService) factory.create(GeoService.class, master);
-		geoService.execute(new PingAction(new Location()));
+		geoService.execute(new LocationHeartbeatAction(new Location()));
 		
 		
 	}

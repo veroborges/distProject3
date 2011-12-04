@@ -2,9 +2,11 @@ package edu.cmu.eventtracker.geoserver;
 
 import java.net.MalformedURLException;
 
+import com.caucho.hessian.client.HessianConnectionException;
 import com.caucho.hessian.client.HessianProxyFactory;
 
 import edu.cmu.eventtracker.action.Action;
+import edu.cmu.eventtracker.action.ReadOnlyAction;
 import edu.cmu.eventtracker.dto.ShardResponse;
 
 public class GeoServiceFacade implements GeoService {
@@ -24,13 +26,17 @@ public class GeoServiceFacade implements GeoService {
 
 	@Override
 	public <A extends Action<R>, R> R execute(A action) {
-		if (isMaster()) {
-			return masterServer.execute(action);
-		} else {
+		if (action instanceof ReadOnlyAction) {
 			return slaveServer.execute(action);
+		} else if (isMaster()) {
+			try {
+				return masterServer.execute(action);
+			} catch (HessianConnectionException e) {
+				return slaveServer.execute(action);
+			}
 		}
+		return null;
 	}
-
 	private GeoService getGeoServiceConnection(String url)
 			throws MalformedURLException {
 		return (GeoService) factory.create(GeoService.class, url);
@@ -43,5 +49,4 @@ public class GeoServiceFacade implements GeoService {
 	public void setMaster(boolean master) {
 		this.master = master;
 	}
-
 }

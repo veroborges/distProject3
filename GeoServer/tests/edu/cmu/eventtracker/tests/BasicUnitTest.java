@@ -24,11 +24,12 @@ import edu.cmu.eventtracker.action.ClearLocationsDBAction;
 import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.GetUserAction;
-import edu.cmu.eventtracker.action.PingAction;
-import edu.cmu.eventtracker.actionhandler.PingHandler;
+import edu.cmu.eventtracker.action.LocationHeartbeatAction;
+import edu.cmu.eventtracker.actionhandler.LocationHeartbeatHandler;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
-import edu.cmu.eventtracker.dto.PingResponse;
+import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
+import edu.cmu.eventtracker.dto.User;
 import edu.cmu.eventtracker.geoserver.GeoServer;
 import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.serverlocator.ServerLocator;
@@ -58,6 +59,7 @@ public class BasicUnitTest {
 	}
 	@After
 	public void tearDown() throws Exception {
+		Thread.sleep(1000);
 		if (serverLocator != null) {
 			serverLocator.stop();
 		}
@@ -66,10 +68,6 @@ public class BasicUnitTest {
 				server.stop();
 			}
 		}
-	}
-
-	public void initUserShards(ServerLocatorService locationService) {
-
 	}
 
 	@Test(timeout = GeoService.TIMEOUT)
@@ -90,13 +88,20 @@ public class BasicUnitTest {
 
 			if (geoService.execute(new AddUserAction(username, name, password))) {
 				counter++;
-				assertEquals(username,
-						geoService.execute(new GetUserAction(username))
-								.getUsername());
+				boolean found = false;
+				for (int i = 0; i < 5; i++) {
+					Thread.sleep(100);
+					User user = geoService.execute(new GetUserAction(username));
+					if (user != null) {
+						found = true;
+						assertEquals(username, user.getUsername());
+						break;
+					}
+				}
+				assertTrue(found);
 			}
 		}
 	}
-
 	private void initShards() {
 		String[] serviceUrls = getGeoServiceURLS(9990, 4);
 		serverLocatorCache.addUserShard(Integer.MIN_VALUE, serviceUrls[0],
@@ -196,13 +201,9 @@ public class BasicUnitTest {
 		for (int i = 0; i < count; i++) {
 			lat += .2;
 			serverLocatorCache.getLocationShardServer(lat, lng).execute(
-					new PingAction(new Location(null, lat, lng, "anar", null,
-							null)));
+					new LocationHeartbeatAction(new Location(null, lat, lng,
+							"anar", null, null)));
 		}
-	}
-
-	public void initLocationShards(ServerLocatorService locationService) {
-
 	}
 
 	@Test(timeout = GeoService.TIMEOUT)
@@ -211,13 +212,13 @@ public class BasicUnitTest {
 		startGeoServers(4);
 		double lng = 40.8;
 		double lat = -74;
-		int count = PingHandler.MIN_COUNT + 5;
+		int count = LocationHeartbeatHandler.MIN_COUNT + 5;
 		for (int i = 0; i < count; i++) {
-			PingResponse response = serverLocatorCache.getLocationShardServer(
-					lat, lng).execute(
-					new PingAction(new Location(null, lat, lng, "user" + i,
-							null, null)));
-			if (i < PingHandler.MIN_COUNT - 1) {
+			LocationHeartbeatResponse response = serverLocatorCache
+					.getLocationShardServer(lat, lng).execute(
+							new LocationHeartbeatAction(new Location(null, lat,
+									lng, "user" + i, null, null)));
+			if (i < LocationHeartbeatHandler.MIN_COUNT - 1) {
 				assertFalse(response.canCreateEvent());
 			} else {
 				assertTrue(response.canCreateEvent());
@@ -231,17 +232,17 @@ public class BasicUnitTest {
 		startGeoServers(4);
 		double lng = 40.8;
 		double lat = -74;
-		int count = PingHandler.MIN_COUNT + 10;
+		int count = LocationHeartbeatHandler.MIN_COUNT + 10;
 		String eventId = null;
 		int eventParticipantCount = 0;
 		for (int i = 0; i < count; i++) {
 			String username = "user" + i;
-			PingResponse response = serverLocatorCache.getLocationShardServer(
-					lat, lng).execute(
-					new PingAction(new Location(null, lat, lng, username, null,
-							null)));
+			LocationHeartbeatResponse response = serverLocatorCache
+					.getLocationShardServer(lat, lng).execute(
+							new LocationHeartbeatAction(new Location(null, lat,
+									lng, username, null, null)));
 
-			if (i < PingHandler.MIN_COUNT - 1) {
+			if (i < LocationHeartbeatHandler.MIN_COUNT - 1) {
 				assertFalse(response.canCreateEvent());
 				boolean exceptionThrown = false;
 				try {
@@ -256,7 +257,7 @@ public class BasicUnitTest {
 					exceptionThrown = true;
 				}
 				assertTrue(exceptionThrown);
-			} else if (i == PingHandler.MIN_COUNT - 1) {
+			} else if (i == LocationHeartbeatHandler.MIN_COUNT - 1) {
 				assertTrue(response.canCreateEvent());
 				Event event = serverLocatorCache.getLocationShardServer(lat,
 						lng).execute(
@@ -278,8 +279,8 @@ public class BasicUnitTest {
 				assertEquals(eventParticipantCount, event.getParticipantCount());
 				found = true;
 				assertTrue(found);
-				PingAction pingAction = new PingAction(new Location(null, lat,
-						lng, username, eventId, null));
+				LocationHeartbeatAction pingAction = new LocationHeartbeatAction(
+						new Location(null, lat, lng, username, eventId, null));
 				serverLocatorCache.getLocationShardServer(lat, lng).execute(
 						pingAction);
 				eventParticipantCount++;
