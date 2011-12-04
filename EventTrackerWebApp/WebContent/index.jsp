@@ -7,11 +7,11 @@
   body { height: 100%; margin: 0; padding: 0 }
   #map_canvas { height: 100%; margin-top: 50px;}
 </style>
-<script type="text/javascript"
-    src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDAJrNEEEeiN-_qU	KKhbcLjuCHAkv4VSoU&sensor=true">
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyDAJrNEEEeiN-_qU	KKhbcLjuCHAkv4VSoU&sensor=true">
 </script>
 
-<script src="http://code.jquery.com/jquery-latest.js"></script>
 <script type="text/javascript">
   var map;
   var markers;
@@ -62,7 +62,7 @@ function timedPing(markerId){
 		    draggable:true,
 		    username: null,
 		    canCreate: false,
-		    events: null,
+		    events: new Array(),
 		    eventid: null,
 		    infoWindow: new google.maps.InfoWindow()
 		  });
@@ -91,20 +91,24 @@ function timedPing(markerId){
 		  html = "<form id='newEventF'>" +
 	      "Event Name:<br/><input type='text' id='eventname'/><br/><br/>" +
 	      "<input type='hidden' id='markerId' value='" + markerId + "'/>" +
-	      "<input type='button' value='Create New Event' onclick='createEvent(newEventF)'/>" +
-	      "</form>";
-	  }else if (marker.canCreate == false && marker.events.length > 0){
+	      "<input type='button' value='Create Event' onclick='createNewEvent(newEventF)'/>"+
+	      + "</form>";
+	      
+	  } else if (marker.canCreate == false && marker.events.length > 0){
 		  html = "<form id='joinEventF'>" +
 	      "Type:<select id='eventDrop'>" +
-          "<option value='none' SELECTED>none</option>"
+          "<option value='none' SELECTED>none</option>";
          
-          for(var i = 0; i < marker.events.length(); i++){
-          	html += "<option value='" + marker.events[i].id + "'>" +  marker.events[i].name + "</option>"
+          for(var i = 0; i < marker.events.length; i++){
+          	html += "<option value='" + marker.events[i].id + "'>" +  marker.events[i].name + "</option>";
           }
           
           html += "</select><br/><br/>" +
 	      "<input type='hidden' id='markerId' value='" + markerId + "'/>" +
-	      "<input type='button' value='Create New Event' onclick='saveEvent(joinEventF)'/></form>";
+	      "<input type='button' value='Join Event' onclick='joinEvent(joinEventF)'/></form>";
+	  }
+	  else if (marker.eventid != null && marker.eventid != "null"){
+		  html = "you just joined an event!"
 	  }else{
 		  html = marker.username;
 	  }
@@ -129,8 +133,9 @@ function timedPing(markerId){
             timedPing(markerIdNum);
     	});
     }
-  function createEvent(form) { 
-	  console.log(form.markerId.value);
+  
+  function createNewEvent(form) { 
+	  console.log(form.markerId.value + "im in create event!");
 	  var markerIdNum = parseInt(form.markerId.value);
 	  var marker = markers[markerIdNum];
 	  var lng = marker.getPosition().lng();
@@ -142,6 +147,13 @@ function timedPing(markerId){
 		   console.log(data);
 		   updateInfoWindow(markerIdNum);
 	  });
+    }
+  
+  function joinEvent(form) { 
+	  console.log(form.markerId.value);
+	  var markerIdNum = parseInt(form.markerId.value);
+	  var marker = markers[markerIdNum];
+	  marker.eventid = form.selected.value;
     }
 	 
 </script>
