@@ -1,47 +1,27 @@
 package edu.cmu.eventtracker.action;
 
 import edu.cmu.eventtracker.dto.Event;
+import edu.cmu.eventtracker.dto.Location;
 
-public class CreateEventAction implements ReplicatableAction<Event> {
-	private double lat;
-	private double lng;
-	private String username;
-	private String eventName;
+public class CreateEventAction implements Action<Event>, Synchronous {
+	private Event event;
 
 	public CreateEventAction() {
 	}
 
 	public CreateEventAction(double lat, double lng, String username,
 			String eventName) {
-		this.lat = lat;
-		this.lng = lng;
-		this.username = username;
-		this.eventName = eventName;
+		event = new Event();
+		event.setLocation(new Location(null, lat, lng, username, null, null));
+		event.setName(eventName);
 	}
 
-	public double getLat() {
-		return lat;
+	public Event getEvent() {
+		return event;
 	}
-	public void setLat(double lat) {
-		this.lat = lat;
-	}
-	public double getLng() {
-		return lng;
-	}
-	public void setLng(double lng) {
-		this.lng = lng;
-	}
-	public String getUsername() {
-		return username;
-	}
-	public void setUsername(String username) {
-		this.username = username;
-	}
-	public String getEventName() {
-		return eventName;
-	}
-	public void setEventName(String eventName) {
-		this.eventName = eventName;
+
+	public void setEvent(Event event) {
+		this.event = event;
 	}
 
 }

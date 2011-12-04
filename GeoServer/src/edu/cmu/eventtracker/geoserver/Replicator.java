@@ -4,7 +4,6 @@ import java.net.MalformedURLException;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import edu.cmu.eventtracker.action.Action;
-import edu.cmu.eventtracker.action.ReplicatableAction;
 
 public class Replicator extends Thread {
 
@@ -29,8 +28,7 @@ public class Replicator extends Thread {
 		}
 	}
 
-	public void replicateAction(ReplicatableAction<?> action)
-			throws InterruptedException {
+	public void replicateAction(Action<?> action) throws InterruptedException {
 		actionQueue.put(action);
 	}
 

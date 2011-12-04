@@ -1,5 +1,5 @@
 package edu.cmu.eventtracker.action;
 
-public class ClearUsersDBAction implements Action<Void>, Syncronous {
+public class ClearUsersDBAction implements ReplicatableAction<Void>, Synchronous {
 
 }

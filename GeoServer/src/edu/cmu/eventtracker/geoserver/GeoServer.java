@@ -4,12 +4,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 import edu.cmu.eventtracker.serverlocator.ServerLocator;
+import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
 public class GeoServer {
 
@@ -17,6 +20,9 @@ public class GeoServer {
 	public String protocol = "jdbc:derby:";
 	private int port;
 	private Server server;
+	static {
+		Logger.getLogger("GeoServer").setLevel(Level.INFO);
+	}
 
 	public GeoServer(int port, boolean master, String serverLocatorURL) {
 		this.port = port;
@@ -52,16 +58,14 @@ public class GeoServer {
 				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
-				.execute("CREATE TABLE LOCATION (  ID bigint not null GENERATED ALWAYS AS IDENTITY,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_id bigint DEFAULT NULL,  PRIMARY KEY (ID))");
+				.execute("CREATE TABLE EVENT (id CHAR(36) not null, NAME varchar(255) DEFAULT NULL, TIMESTAMP timestamp DEFAULT NULL, PRIMARY KEY (id))");
+
 		statement
-				.execute("CREATE TABLE EVENT (id bigint NOT NULL GENERATED ALWAYS AS IDENTITY, NAME varchar(255) DEFAULT NULL, TIMESTAMP timestamp DEFAULT NULL, LOCATION_ID bigint DEFAULT NULL, PRIMARY KEY (id))");
+				.execute("CREATE TABLE LOCATION (  ID CHAR(36) not null,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_ID CHAR(36) DEFAULT NULL,  PRIMARY KEY (ID), FOREIGN KEY (EVENT_ID) REFERENCES EVENT (id) ON DELETE CASCADE ON UPDATE RESTRICT) ");
 
 		statement
 				.execute("CREATE TABLE USERS (USERNAME varchar(255) NOT NULL, NAME varchar(255) DEFAULT NULL, PASSWORD varchar(255) DEFAULT NULL,  PRIMARY KEY (USERNAME))");
-		statement
-				.execute("ALTER TABLE EVENT ADD CONSTRAINT FK_EVENT_LOCATION_ID FOREIGN KEY (LOCATION_ID) REFERENCES LOCATION (ID) ON DELETE CASCADE ON UPDATE RESTRICT");
-		statement
-				.execute("ALTER TABLE LOCATION ADD CONSTRAINT FK_LOCATION_EVENT_id FOREIGN KEY (EVENT_id) REFERENCES EVENT (id) ON DELETE CASCADE ON UPDATE RESTRICT");
+
 		conn.close();
 	}
 
@@ -70,16 +74,14 @@ public class GeoServer {
 				+ port + ";create=true", null);
 		Statement statement = conn.createStatement();
 		statement
-				.execute("CREATE TABLE LOCATION (  ID bigint not null GENERATED ALWAYS AS IDENTITY,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_id bigint DEFAULT NULL,  PRIMARY KEY (ID))");
+				.execute("CREATE TABLE EVENT (id CHAR(36) not null, NAME varchar(255) DEFAULT NULL, PRIMARY KEY (id))");
+
 		statement
-				.execute("CREATE TABLE EVENT (id bigint NOT NULL GENERATED ALWAYS AS IDENTITY, NAME varchar(255) DEFAULT NULL, TIMESTAMP timestamp DEFAULT NULL, LOCATION_ID bigint DEFAULT NULL, PRIMARY KEY (id))");
+				.execute("CREATE TABLE LOCATION (  ID CHAR(36) not null,  LAT float not NULL,  LNG float not NULL,  TIMESTAMP timestamp not null,  USERNAME varchar(255) not NULL,  EVENT_ID CHAR(36) DEFAULT NULL,  PRIMARY KEY (ID), FOREIGN KEY (EVENT_ID) REFERENCES EVENT (id) ON DELETE CASCADE ON UPDATE RESTRICT) ");
 
 		// statement
 		// .execute("CREATE TABLE USERS (USERNAME varchar(255) NOT NULL, NAME varchar(255) DEFAULT NULL, PASSWORD varchar(255) DEFAULT NULL,  PRIMARY KEY (USERNAME))");
-		statement
-				.execute("ALTER TABLE EVENT ADD CONSTRAINT FK_EVENT_LOCATION_ID FOREIGN KEY (LOCATION_ID) REFERENCES LOCATION (ID) ON DELETE CASCADE ON UPDATE RESTRICT");
-		statement
-				.execute("ALTER TABLE LOCATION ADD CONSTRAINT FK_LOCATION_EVENT_id FOREIGN KEY (EVENT_id) REFERENCES EVENT (id) ON DELETE CASCADE ON UPDATE RESTRICT");
+
 		conn.close();
 	}
 
@@ -88,7 +90,8 @@ public class GeoServer {
 		try {
 			String locatorURL = "http://"
 					+ InetAddress.getLocalHost().getHostName() + ":"
-					+ ServerLocator.SERVER_LOCATOR_PORT + "/";
+					+ ServerLocator.SERVER_LOCATOR_PORT + "/"
+					+ ServerLocatorService.class.getSimpleName();
 			new GeoServer(9990, true, locatorURL).start();
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);

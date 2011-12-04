@@ -2,7 +2,7 @@ package edu.cmu.eventtracker.action;
 
 import edu.cmu.eventtracker.dto.User;
 
-public class GetUserAction implements Action<User> {
+public class GetUserAction implements Action<User>, ReadOnlyAction {
 	private String username;
 
 	public GetUserAction() {

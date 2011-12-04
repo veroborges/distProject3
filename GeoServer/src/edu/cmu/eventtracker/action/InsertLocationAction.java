@@ -1,16 +1,16 @@
 package edu.cmu.eventtracker.action;
 
 import edu.cmu.eventtracker.dto.Location;
-import edu.cmu.eventtracker.dto.PingResponse;
 
-public class PingAction implements Action<PingResponse> {
+public class InsertLocationAction implements ReplicatableAction<Void> {
 
 	private Location location;
 
-	public PingAction() {
+	public InsertLocationAction() {
+
 	}
 
-	public PingAction(Location location) {
+	public InsertLocationAction(Location location) {
 		this.location = location;
 	}
 
@@ -21,5 +21,4 @@ public class PingAction implements Action<PingResponse> {
 	public void setLocation(Location location) {
 		this.location = location;
 	}
-
 }

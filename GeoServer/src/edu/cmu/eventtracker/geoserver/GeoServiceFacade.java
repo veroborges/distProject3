@@ -15,7 +15,8 @@ public class GeoServiceFacade implements GeoService {
 
 	public GeoServiceFacade(ShardResponse shards) throws MalformedURLException {
 		factory = new HessianProxyFactory();
-		factory.setConnectTimeout(500);
+		factory.setConnectTimeout(GeoService.TIMEOUT);
+		factory.setReadTimeout(GeoService.TIMEOUT);
 		master = getGeoServiceConnection(shards.getMaster());
 		slave = getGeoServiceConnection(shards.getSlave());
 	}

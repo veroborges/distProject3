@@ -1,0 +1,46 @@
+package edu.cmu.eventtracker.actionhandler;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import edu.cmu.eventtracker.action.InsertLocationAction;
+import edu.cmu.eventtracker.dto.Location;
+
+public class InsertLocationHandler
+		implements
+			ActionHandler<InsertLocationAction, Void> {
+
+	@Override
+	public Void performAction(InsertLocationAction action, ActionContext context) {
+		GeoServiceContext geoContext = (GeoServiceContext) context;
+		try {
+			PreparedStatement statement = geoContext
+					.getLocationsConnection()
+					.prepareStatement(
+							"Insert into location(id, lat, lng, username, timestamp, event_id) values (?, ?, ?, ?, ?, ?)");
+
+			Location location = action.getLocation();
+			statement.setString(1, location.getId());
+			statement.setDouble(2, location.getLat());
+			statement.setDouble(3, location.getLng());
+			statement.setString(4, location.getUsername());
+			statement.setTimestamp(5, new Timestamp(location.getTimestamp()
+					.getTime()));
+			if (location.getEventId() == null) {
+				statement.setNull(6, java.sql.Types.CHAR);
+			} else {
+				statement.setString(6, location.getEventId());
+			}
+			statement.execute();
+
+			Logger.getLogger("GeoServer").log(Level.INFO,
+					"Inserting location " + location.getId());
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		}
+		return null;
+	}
+}

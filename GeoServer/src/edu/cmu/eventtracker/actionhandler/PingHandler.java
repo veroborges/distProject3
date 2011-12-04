@@ -3,15 +3,17 @@ package edu.cmu.eventtracker.actionhandler;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.effectiveJava.GeoLocationService;
 import com.effectiveJava.Point;
 
+import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.PingAction;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
@@ -28,12 +30,15 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		PingResponse response = new PingResponse();
 		try {
-			insertLocation(action.getUsername(), action.getLat(),
-					action.getLng(), action.getEventId(), geoContext);
-			HashMap<Long, Event> closeByEvents = closeByEvents(action.getLat(),
-					action.getLng(), geoContext);
-			if (action.getEventId() != null) {
-				Event event = closeByEvents.get(action.getEventId());
+			Location location = action.getLocation();
+			location.setId(UUID.randomUUID().toString());
+			location.setTimestamp(new Date());
+			context.execute(new InsertLocationAction(location));
+
+			HashMap<String, Event> closeByEvents = closeByEvents(
+					location.getLat(), location.getLng(), geoContext);
+			if (location.getEventId() != null) {
+				Event event = closeByEvents.get(location.getEventId());
 				if (event == null) {
 					throw new NullPointerException(
 							"Event with the given id was not found");
@@ -41,9 +46,9 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 				Point[] extremes = GeoLocationService.getExtremePointsFrom(
 						new Point(event.getLocation().getLat(), event
 								.getLocation().getLng()), RADIUS);
-				if (!(extremes[0].getLatitude() <= action.getLat()
-						&& extremes[0].getLongitude() <= action.getLng()
-						&& action.getLat() <= extremes[1].getLatitude() && action
+				if (!(extremes[0].getLatitude() <= location.getLat()
+						&& extremes[0].getLongitude() <= location.getLng()
+						&& location.getLat() <= extremes[1].getLatitude() && location
 						.getLng() <= extremes[1].getLongitude())) {
 					throw new IllegalStateException(
 							"You are too far away from the original event");
@@ -56,34 +61,9 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		}
 		return response;
 	}
-
-	public static long insertLocation(String username, double lat, double lng,
-			Long eventId, GeoServiceContext geoContext) throws SQLException {
-		PreparedStatement statement = geoContext
-				.getLocationsConnection()
-				.prepareStatement(
-						"Insert into location(lat, lng, username, timestamp, event_id) values (?, ?, ?, ?, ?)",
-						Statement.RETURN_GENERATED_KEYS);
-		statement.setDouble(1, lat);
-		statement.setDouble(2, lng);
-		statement.setString(3, username);
-		statement.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-		if (eventId == null) {
-			statement.setNull(5, java.sql.Types.BIGINT);
-		} else {
-			statement.setLong(5, eventId);
-		}
-		statement.execute();
-		ResultSet res = statement.getGeneratedKeys();
-		long locationId = 0;
-		if (res.next()) {
-			locationId = res.getLong(1);
-		}
-		return locationId;
-	}
-	public static HashMap<Long, Event> closeByEvents(double lat, double lng,
+	public static HashMap<String, Event> closeByEvents(double lat, double lng,
 			GeoServiceContext geoContext) throws SQLException {
-		HashMap<Long, Event> closeByEvents = new HashMap<Long, Event>();
+		HashMap<String, Event> closeByEvents = new HashMap<String, Event>();
 		Point[] extremePointsFrom = GeoLocationService.getExtremePointsFrom(
 				new Point(lat, lng), RADIUS);
 		PreparedStatement s = geoContext
@@ -104,10 +84,10 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		ResultSet rs = s.getResultSet();
 		while (rs.next()) {
 			int count = rs.getInt("count");
-			long eventId = rs.getLong("event_id");
+			String eventId = rs.getString("event_id");
 			closeByEvents.put(eventId, getEvent(eventId, geoContext));
 			Event event;
-			if (eventId != 0) {
+			if (eventId != null) {
 				event = getEvent(eventId, geoContext);
 			} else {
 				event = new Event();
@@ -118,8 +98,9 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		return closeByEvents;
 	}
 
-	public static boolean canCreateNewEvents(HashMap<Long, Event> closeByEvents) {
-		Event usersWithoutEvent = closeByEvents.get(0L);
+	public static boolean canCreateNewEvents(
+			HashMap<String, Event> closeByEvents) {
+		Event usersWithoutEvent = closeByEvents.get(null);
 		if (usersWithoutEvent != null
 				&& usersWithoutEvent.getParticipantCount() >= MIN_COUNT) {
 			return true;
@@ -128,23 +109,24 @@ public class PingHandler implements ActionHandler<PingAction, PingResponse> {
 		}
 	}
 
-	public static Event getEvent(long eventId, GeoServiceContext geoContext)
+	public static Event getEvent(String eventId, GeoServiceContext geoContext)
 			throws SQLException {
 		PreparedStatement s = geoContext
 				.getLocationsConnection()
 				.prepareStatement(
-						"select event.id, name, lat, lng, username, location.id as location_id from event join location on event.location_id = location.id where event.id=?");
-		s.setLong(1, eventId);
+						"select event.id as event_id, name, location.id as location_id, lat, lng, username, location.timestamp as location_timestamp, min(location.timestamp) from location join event on location.event_id = event.id where event.id=? group by event.id, name, location.id, lat, lng, username, location.timestamp");
+		s.setString(1, eventId);
 		s.execute();
 		ResultSet rs = s.getResultSet();
 		while (rs.next()) {
-			Event event = new Event(rs.getLong("id"), rs.getString("name"),
-					new Location(rs.getLong("location_id"),
-							rs.getDouble("lat"), rs.getDouble("lng"),
-							rs.getString("username"), rs.getLong("id")));
+			Event event = new Event(rs.getString("event_id"),
+					rs.getString("name"), new Location(
+							rs.getString("location_id"), rs.getDouble("lat"),
+							rs.getDouble("lng"), rs.getString("username"),
+							rs.getString("event_id"), new Date(rs.getTimestamp(
+									"location_timestamp").getTime())));
 			return event;
 		}
 		return null;
 	}
-
 }

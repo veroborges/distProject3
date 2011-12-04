@@ -21,8 +21,10 @@ public class GetUserLocationsHandler
 		ResultSet rs = null;
 		try {
 			// statement to get all of a user's locations
-			PreparedStatement userLocationsStatement = geoContext.getUsersConnection()
-					.prepareStatement("select lat, lng, event_id from location where username= ?");
+			PreparedStatement userLocationsStatement = geoContext
+					.getUsersConnection()
+					.prepareStatement(
+							"select lat, lng, event_id from location where username= ?");
 
 			userLocationsStatement.setString(1, action.getUsername());
 			rs = userLocationsStatement.getResultSet();
@@ -34,7 +36,7 @@ public class GetUserLocationsHandler
 				loc.setLat(rs.getFloat("lat"));
 				loc.setLng(rs.getFloat("lng"));
 				loc.setUsername(action.getUsername());
-				loc.setEventId(rs.getLong("event_id"));
+				loc.setEventId(rs.getString("event_id"));
 				locations.add(loc);
 			}
 

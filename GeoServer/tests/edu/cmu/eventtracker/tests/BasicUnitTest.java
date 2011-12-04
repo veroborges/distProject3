@@ -26,6 +26,7 @@ import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.PingAction;
 import edu.cmu.eventtracker.actionhandler.PingHandler;
 import edu.cmu.eventtracker.dto.Event;
+import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.PingResponse;
 import edu.cmu.eventtracker.geoserver.GeoServer;
 import edu.cmu.eventtracker.geoserver.GeoService;
@@ -47,7 +48,8 @@ public class BasicUnitTest {
 	@Before
 	public void before() throws Exception {
 		factory = new HessianProxyFactory();
-		factory.setConnectTimeout(500);
+		factory.setConnectTimeout(GeoService.TIMEOUT);
+		factory.setReadTimeout(GeoService.TIMEOUT);
 		addr = InetAddress.getLocalHost();
 		startServerLocator();
 	}
@@ -71,8 +73,7 @@ public class BasicUnitTest {
 		locationService.addUserShard(0, serviceUrls[2], serviceUrls[3]);
 	}
 
-	@Test
-	// (timeout = 10000)
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testCreateUsers() throws Exception {
 		ServerLocatorService serviceLocator = getServiceLocator();
 		initShards(serviceLocator);
@@ -103,7 +104,7 @@ public class BasicUnitTest {
 		initLocationShards(serviceLocator);
 	}
 
-	@Test
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testUserSharding() throws Exception {
 		ServerLocatorService locatorService = getServiceLocator();
 		initShards(locatorService);
@@ -166,6 +167,8 @@ public class BasicUnitTest {
 					ServerLocator.getURL(addr.getHostName(),
 							ServerLocator.SERVER_LOCATOR_PORT));
 			servers[i].start();
+		}
+		for (int i = 0; i < count; i++) {
 			GeoService connection = getGeoServiceConnection(GeoServer.getURL(
 					addr.getHostName(), startPort + i));
 			connection.execute(new ClearLocationsDBAction());
@@ -173,8 +176,7 @@ public class BasicUnitTest {
 		}
 	}
 
-	@Test
-	// (timeout = 5000)
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testLocationSharding() throws Exception {
 		ServerLocatorService locatorService = getServiceLocator();
 		initShards(locatorService);
@@ -185,7 +187,8 @@ public class BasicUnitTest {
 		for (int i = 0; i < count; i++) {
 			lat += .2;
 			new GeoServiceFacade(locatorService.getLocationShard(lat, lng))
-					.execute(new PingAction(lat, lng, "anar"));
+					.execute(new PingAction(new Location(null, lat, lng,
+							"anar", null, null)));
 		}
 	}
 
@@ -197,8 +200,7 @@ public class BasicUnitTest {
 				-73.75122, serviceUrls[2], serviceUrls[3], "New York");
 	}
 
-	@Test
-	// (timeout = 5000)
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testEventCreationOffer() throws Exception {
 		ServerLocatorService locatorService = getServiceLocator();
 		initShards(locatorService);
@@ -209,7 +211,8 @@ public class BasicUnitTest {
 		for (int i = 0; i < count; i++) {
 			PingResponse response = new GeoServiceFacade(
 					locatorService.getLocationShard(lat, lng))
-					.execute(new PingAction(lat, lng, "user" + i));
+					.execute(new PingAction(new Location(null, lat, lng, "user"
+							+ i, null, null)));
 			if (i < PingHandler.MIN_COUNT - 1) {
 				assertFalse(response.canCreateEvent());
 			} else {
@@ -218,8 +221,7 @@ public class BasicUnitTest {
 		}
 	}
 
-	@Test
-	// (timeout = 5000)
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testEventCreation() throws Exception {
 		ServerLocatorService locatorService = getServiceLocator();
 		initShards(locatorService);
@@ -227,13 +229,14 @@ public class BasicUnitTest {
 		double lng = 40.8;
 		double lat = -74;
 		int count = PingHandler.MIN_COUNT + 10;
-		long eventId = 0;
+		String eventId = null;
 		int eventParticipantCount = 0;
 		for (int i = 0; i < count; i++) {
 			String username = "user" + i;
 			PingResponse response = new GeoServiceFacade(
 					locatorService.getLocationShard(lat, lng))
-					.execute(new PingAction(lat, lng, username));
+					.execute(new PingAction(new Location(null, lat, lng,
+							username, null, null)));
 
 			if (i < PingHandler.MIN_COUNT - 1) {
 				assertFalse(response.canCreateEvent());
@@ -244,6 +247,7 @@ public class BasicUnitTest {
 							username, "TestEvent"));
 					assert false : "this line should not be executed";
 				} catch (Throwable ex) {
+					// ex.printStackTrace();
 					assertTrue(ex instanceof IllegalStateException);
 					exceptionThrown = true;
 				}
@@ -262,22 +266,21 @@ public class BasicUnitTest {
 				boolean found = false;
 				Event event = null;
 				for (Event e : response.getEvents()) {
-					if (e.getId() == eventId) {
+					if (eventId.equals(e.getId())) {
 						event = e;
 						break;
 					}
 				}
-				assertEquals(event.getId(), eventId);
+				assertNotNull(event);
 				assertEquals(eventParticipantCount, event.getParticipantCount());
 				found = true;
 				assertTrue(found);
-				PingAction pingAction = new PingAction(lat, lng, username);
-				pingAction.setEventId(eventId);
+				PingAction pingAction = new PingAction(new Location(null, lat,
+						lng, username, eventId, null));
 				new GeoServiceFacade(locatorService.getLocationShard(lat, lng))
 						.execute(pingAction);
 				eventParticipantCount++;
 			}
 		}
 	}
-
 }

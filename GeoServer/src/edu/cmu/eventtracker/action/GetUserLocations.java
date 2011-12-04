@@ -4,7 +4,7 @@ import java.util.List;
 
 import edu.cmu.eventtracker.dto.Location;
 
-public class GetUserLocations implements Action<List<Location>> {
+public class GetUserLocations implements Action<List<Location>>, ReadOnlyAction {
 
 	private String username;
 

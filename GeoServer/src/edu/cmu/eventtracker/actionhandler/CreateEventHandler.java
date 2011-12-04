@@ -1,12 +1,13 @@
 package edu.cmu.eventtracker.actionhandler;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.UUID;
 
 import edu.cmu.eventtracker.action.CreateEventAction;
+import edu.cmu.eventtracker.action.InsertEventAction;
+import edu.cmu.eventtracker.action.PingAction;
 import edu.cmu.eventtracker.dto.Event;
+import edu.cmu.eventtracker.dto.Location;
 
 public class CreateEventHandler
 		implements
@@ -17,32 +18,20 @@ public class CreateEventHandler
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		try {
 			if (!PingHandler.canCreateNewEvents(PingHandler.closeByEvents(
-					action.getLat(), action.getLng(), geoContext))) {
+					action.getEvent().getLocation().getLat(), action.getEvent()
+							.getLocation().getLng(), geoContext))) {
 				throw new IllegalStateException("Can't create new events yet");
 			}
-			long locationId = PingHandler.insertLocation(action.getUsername(),
-					action.getLat(), action.getLng(), null, geoContext);
-			PreparedStatement statement = geoContext
-					.getLocationsConnection()
-					.prepareStatement(
-							"Insert into event(location_id, name) values(?, ?)",
-							Statement.RETURN_GENERATED_KEYS);
-			statement.setLong(1, locationId);
-			statement.setString(2, action.getUsername());
-			statement.execute();
-			ResultSet res = statement.getGeneratedKeys();
-			long eventId = 0;
-			while (res.next()) {
-				eventId = res.getLong(1);
-			}
-			statement = geoContext.getLocationsConnection().prepareStatement(
-					"update location set event_id = ? where id=?");
-			statement.setLong(1, eventId);
-			statement.setLong(2, locationId);
-			statement.execute();
-			return PingHandler.getEvent(eventId, geoContext);
+			Location location = action.getEvent().getLocation();
+			action.getEvent().setId(UUID.randomUUID().toString());
+			location.setEventId(action.getEvent().getId());
+			context.execute(new InsertEventAction(action.getEvent()));
+			context.execute(new PingAction(location));
+
+			return PingHandler.getEvent(action.getEvent().getId(), geoContext);
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		}
 	}
+
 }

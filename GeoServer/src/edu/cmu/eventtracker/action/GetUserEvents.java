@@ -2,7 +2,7 @@ package edu.cmu.eventtracker.action;
 
 import java.util.List;
 
-public class GetUserEvents implements Action<List<String>> {
+public class GetUserEvents implements Action<List<String>>, ReadOnlyAction {
 
 	private String username;
 
