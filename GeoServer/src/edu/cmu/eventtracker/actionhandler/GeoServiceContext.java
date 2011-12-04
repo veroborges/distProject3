@@ -8,6 +8,7 @@ import java.util.ListIterator;
 import edu.cmu.eventtracker.action.Action;
 import edu.cmu.eventtracker.action.BatchAction;
 import edu.cmu.eventtracker.action.ReplicatableAction;
+import edu.cmu.eventtracker.action.ReplicationAction;
 import edu.cmu.eventtracker.action.Synchronous;
 import edu.cmu.eventtracker.action.UserShardAction;
 import edu.cmu.eventtracker.geoserver.GeoServiceImpl;
@@ -52,7 +53,7 @@ public class GeoServiceContext implements ActionContext {
 				iterator.remove();
 			}
 			service.getOtherGeoService().execute(
-					new BatchAction(replicatedList));
+					new ReplicationAction(new BatchAction(replicatedList)));
 		}
 		return response;
 	}
