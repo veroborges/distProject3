@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,14 +20,16 @@ import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
 
-public class LocationHeartbeatHandler implements ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
+public class LocationHeartbeatHandler implements
+		ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
 
 	public static final double RADIUS = 0.5; // km
-	public static final int MIN_COUNT = 10;
+	public static final int MIN_COUNT = 4;
 	public static final int MAX_PERIOD = 60; // minutes
 
 	@Override
-	public LocationHeartbeatResponse performAction(LocationHeartbeatAction action, ActionContext context) {
+	public LocationHeartbeatResponse performAction(
+			LocationHeartbeatAction action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		LocationHeartbeatResponse response = new LocationHeartbeatResponse();
 		try {
@@ -61,11 +64,13 @@ public class LocationHeartbeatHandler implements ActionHandler<LocationHeartbeat
 		}
 		return response;
 	}
+
 	public static HashMap<String, Event> closeByEvents(double lat, double lng,
 			GeoServiceContext geoContext) throws SQLException {
 		HashMap<String, Event> closeByEvents = new HashMap<String, Event>();
 		Point[] extremePointsFrom = GeoLocationService.getExtremePointsFrom(
 				new Point(lat, lng), RADIUS);
+		System.out.println(Arrays.toString(extremePointsFrom));
 		PreparedStatement s = geoContext
 				.getLocationsConnection()
 				.prepareStatement(
@@ -93,8 +98,10 @@ public class LocationHeartbeatHandler implements ActionHandler<LocationHeartbeat
 				event = new Event();
 			}
 			event.setParticipantCount(count);
+			System.out.println(event.getParticipantCount());
 			closeByEvents.put(eventId, event);
 		}
+
 		return closeByEvents;
 	}
 
