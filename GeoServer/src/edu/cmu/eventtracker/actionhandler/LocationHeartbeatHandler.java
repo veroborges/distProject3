@@ -76,8 +76,8 @@ public class LocationHeartbeatHandler
 				.getLocationsConnection()
 				.prepareStatement(
 						"select event_id, event.name as eventname, count(*) as count from location join "
-								+ "(Select id, username, max(timestamp) from location  where ? <= lat and lat < ? and ? <= lng and lng < ? and timestamp > ? group by id, username)"
-								+ " s on location.id = s.id left join event on location.event_id = event.id group by event_id, event.name");
+								+ "(Select username, max(timestamp) as timestamp from location  where ? <= lat and lat < ? and ? <= lng and lng < ? and timestamp > ? group by username)"
+								+ " s on (location.username = s.username and location.timestamp = s.timestamp) left join event on location.event_id = event.id group by event_id, event.name");
 		System.out.println(lat + " " + lng);
 		System.out.println(Arrays.toString(extremePointsFrom));
 		s.setDouble(1, extremePointsFrom[0].getLatitude());
@@ -90,7 +90,9 @@ public class LocationHeartbeatHandler
 		s.execute();
 		ResultSet rs = s.getResultSet();
 		while (rs.next()) {
+
 			int count = rs.getInt("count");
+			System.out.println(count);
 			String eventId = rs.getString("event_id");
 			closeByEvents.put(eventId, getEvent(eventId, geoContext));
 			Event event;
