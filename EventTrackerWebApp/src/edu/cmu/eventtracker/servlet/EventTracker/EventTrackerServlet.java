@@ -81,6 +81,7 @@ public class EventTrackerServlet extends HttpServlet {
 				.execute(new LocationHeartbeatAction(loc));		
 		
 		System.out.println("can create:" + res.canCreateEvent());
+		System.out.println("events:" + res.getEvents());
 		gson = new GsonBuilder().create();
 		String json = gson.toJson(res);
 		
