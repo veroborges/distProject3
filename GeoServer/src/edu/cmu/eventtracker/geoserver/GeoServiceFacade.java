@@ -14,7 +14,7 @@ public class GeoServiceFacade implements GeoService {
 	private GeoService masterServer;
 	private GeoService slaveServer;
 	private HessianProxyFactory factory;
-	private boolean master;
+	private boolean master = true;
 
 	public GeoServiceFacade(ShardResponse shards) throws MalformedURLException {
 		factory = new HessianProxyFactory();
@@ -35,8 +35,9 @@ public class GeoServiceFacade implements GeoService {
 				return slaveServer.execute(action);
 			}
 		}
-		return null;
+		throw new IllegalStateException("Facade is misconfigured");
 	}
+
 	private GeoService getGeoServiceConnection(String url)
 			throws MalformedURLException {
 		return (GeoService) factory.create(GeoService.class, url);

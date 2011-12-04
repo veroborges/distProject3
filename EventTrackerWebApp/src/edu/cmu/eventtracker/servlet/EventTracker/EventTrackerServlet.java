@@ -22,7 +22,7 @@ import edu.cmu.eventtracker.action.AddUserAction;
 import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.PingAction;
 import edu.cmu.eventtracker.dto.Event;
-import edu.cmu.eventtracker.dto.PingResponse;
+//import edu.cmu.eventtracker.dto.PingResponse;
 import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.geoserver.GeoServiceFacade;
 import edu.cmu.eventtracker.serverlocator.ServerLocator;

@@ -57,6 +57,7 @@ public class BasicUnitTest {
 		startServerLocator();
 
 	}
+
 	@After
 	public void tearDown() throws Exception {
 		Thread.sleep(1000);
@@ -102,7 +103,8 @@ public class BasicUnitTest {
 			}
 		}
 	}
-	private void initShards() {
+
+	public void initShards() {
 		String[] serviceUrls = getGeoServiceURLS(9990, 4);
 		serverLocatorCache.addUserShard(Integer.MIN_VALUE, serviceUrls[0],
 				serviceUrls[1]);
@@ -125,12 +127,12 @@ public class BasicUnitTest {
 		testInsertUser(locatorService, "anar", geoServices[2]);
 	}
 
-	private void startServerLocator() throws Exception {
+	public void startServerLocator() throws Exception {
 		serverLocator = new ServerLocator(8888);
 		serverLocator.start();
 		ArrayList<ServerLocatorService> locatorServices = new ArrayList<ServerLocatorService>();
 		String locatorURL = ServerLocator.getURL(addr.getHostName(),
-				ServerLocator.SERVER_LOCATOR_PORT);
+				ServerLocatorService.SERVER_LOCATOR_PORT);
 		ServerLocatorService service = (ServerLocatorService) factory.create(
 				ServerLocatorService.class, locatorURL);
 		locatorServices.add(service);
@@ -180,7 +182,7 @@ public class BasicUnitTest {
 		for (int i = 0; i < count; i++) {
 			servers[i] = new GeoServer(i + startPort, i % 2 == 0,
 					ServerLocator.getURL(addr.getHostName(),
-							ServerLocator.SERVER_LOCATOR_PORT));
+							ServerLocatorService.SERVER_LOCATOR_PORT));
 			servers[i].start();
 		}
 		for (int i = 0; i < count; i++) {

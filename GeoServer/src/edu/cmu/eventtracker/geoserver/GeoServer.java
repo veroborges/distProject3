@@ -1,4 +1,5 @@
 package edu.cmu.eventtracker.geoserver;
+
 import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -11,7 +12,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-import edu.cmu.eventtracker.serverlocator.ServerLocator;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
 public class GeoServer {
@@ -90,7 +90,7 @@ public class GeoServer {
 		try {
 			String locatorURL = "http://"
 					+ InetAddress.getLocalHost().getHostName() + ":"
-					+ ServerLocator.SERVER_LOCATOR_PORT + "/"
+					+ ServerLocatorService.SERVER_LOCATOR_PORT + "/"
 					+ ServerLocatorService.class.getSimpleName();
 			new GeoServer(9990, true, locatorURL).start();
 		} catch (Throwable e) {

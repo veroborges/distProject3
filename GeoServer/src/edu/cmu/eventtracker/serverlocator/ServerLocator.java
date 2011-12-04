@@ -1,4 +1,5 @@
 package edu.cmu.eventtracker.serverlocator;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -14,7 +15,6 @@ public class ServerLocator {
 	public String protocol = "jdbc:derby:";
 	private int port;
 	private Server server;
-	public static final int SERVER_LOCATOR_PORT = 8888;
 
 	public ServerLocator(int port) {
 		this.port = port;
@@ -52,7 +52,7 @@ public class ServerLocator {
 
 	public static void main(String[] args) {
 		try {
-			new ServerLocator(SERVER_LOCATOR_PORT).start();
+			new ServerLocator(ServerLocatorService.SERVER_LOCATOR_PORT).start();
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
 		}
