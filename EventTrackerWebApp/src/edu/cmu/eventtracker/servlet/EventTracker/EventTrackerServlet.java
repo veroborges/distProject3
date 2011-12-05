@@ -66,7 +66,7 @@ public class EventTrackerServlet extends HttpServlet {
 		String lng = request.getParameter("pLng");
 		String eventid = request.getParameter("pEventId");
 
-		if (eventid.equals("null")) {
+		if (eventid == null || eventid.equals("null")) {
 			eventid = null;
 		}
 
@@ -116,17 +116,18 @@ public class EventTrackerServlet extends HttpServlet {
 		String lng = request.getParameter("cLng");
 		String eventname = request.getParameter("cEventName");
 
+		System.out.println("user:" + username + " lat: " + lat + " lon: " + lng);
 		double latD = Double.parseDouble(lat);
 		double lngD = Double.parseDouble(lng);
 
 		GeoService geoService = new GeoServiceFacade(
-				locatorService.getUserShard(username));
+				locatorService.getLocationShard(latD, lngD));
 
-		geoService.execute(new CreateEventAction(latD, lngD, username,
+		Event res = geoService.execute(new CreateEventAction(latD, lngD, username,
 				eventname));
 
 		gson = new GsonBuilder().create();
-		json = gson.toJson("created" + eventname);
+		json = gson.toJson(res);
 	}
 
 	private void doCreateUser(HttpServletRequest request)
