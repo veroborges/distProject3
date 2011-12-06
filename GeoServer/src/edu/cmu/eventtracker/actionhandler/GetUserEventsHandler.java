@@ -10,15 +10,16 @@ import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 
-public class GetUserEventsHandler implements
-		ActionHandler<GetUserEvents, List<Event>> {
+public class GetUserEventsHandler
+		implements
+			ActionHandler<GetUserEvents, List<Event>> {
 
 	@Override
 	public List<Event> performAction(GetUserEvents action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		List<Event> events = new ArrayList<Event>();
 		ResultSet rs = null;
-		Double lat, lng;
+		double lat, lng;
 
 		try {
 			// statement to get all of a user's events
@@ -33,8 +34,8 @@ public class GetUserEventsHandler implements
 
 			// populate events list with events returned
 			while (rs.next()) {
-				lat = rs.getDouble(lat);
-				lng = rs.getDouble(lng);
+				lat = rs.getDouble("lat");
+				lng = rs.getDouble("lng");
 				Location loc = new Location(null, lat, lng, null, null, null);
 				Event event = new Event(rs.getString("event_id"),
 						rs.getString("eventname"), loc);

@@ -36,6 +36,7 @@ import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
 import edu.cmu.eventtracker.dto.User;
+import edu.cmu.eventtracker.geoserver.ExecuteOnMasterException;
 import edu.cmu.eventtracker.geoserver.GeoServer;
 import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.serverlocator.ServerLocator;
@@ -356,6 +357,17 @@ public class BasicUnitTest {
 			}
 		}
 		assertNotNull(user);
+
+		ExecuteOnMasterException ex = null;
+		try {
+			getGeoServiceConnection(
+					serverLocatorCache.getUserShard("veronica2").getSlave())
+					.execute(
+							new AddUserAction("veronica2", "veronica2", "pass"));
+		} catch (ExecuteOnMasterException e) {
+			ex = e;
+		}
+		assertNotNull(ex);
 	}
 
 	@Test

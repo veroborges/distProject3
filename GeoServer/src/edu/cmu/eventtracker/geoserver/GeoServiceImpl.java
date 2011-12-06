@@ -27,6 +27,7 @@ import edu.cmu.eventtracker.action.GetAllEventsAction;
 import edu.cmu.eventtracker.action.GetLocationAction;
 import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.GetUserEvents;
+import edu.cmu.eventtracker.action.GetUserLocations;
 import edu.cmu.eventtracker.action.InsertEventAction;
 import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
@@ -45,6 +46,7 @@ import edu.cmu.eventtracker.actionhandler.GetAllEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetLocationHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserHandler;
+import edu.cmu.eventtracker.actionhandler.GetUserLocationsHandler;
 import edu.cmu.eventtracker.actionhandler.InsertEventHandler;
 import edu.cmu.eventtracker.actionhandler.InsertLocationHandler;
 import edu.cmu.eventtracker.actionhandler.LocationHeartbeatHandler;
@@ -141,6 +143,8 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				new DisableSlaveFailoverHandler());
 		getActionHandlerMap().put(GetLocationAction.class,
 				new GetLocationHandler());
+		getActionHandlerMap().put(GetUserLocations.class,
+				new GetUserLocationsHandler());
 		if (master) {
 			try {
 				otherGeoService.execute(new DisableSlaveFailover());
@@ -186,7 +190,8 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 						try {
 							if (!(action instanceof ReplicationAction)
 									|| !((ReplicationAction) action)
-											.getSourceUrl().equals(null)) {
+											.getSourceUrl().equals(
+													otherGeoServiceUrl)) {
 								replicator.replicateAction(new BatchAction(
 										context.getActionLog()));
 							}
