@@ -14,4 +14,24 @@
     <servlet-name>EventTrackerServlet</servlet-name>
     <url-pattern>/EventTrackerServlet</url-pattern>
   </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>UserLocationsServlet</display-name>
+    <servlet-name>UserLocationsServlet</servlet-name>
+    <servlet-class>edu.cmu.eventtracker.servlet.EventTracker.UserLocationsServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>UserLocationsServlet</servlet-name>
+    <url-pattern>/locations.jsp</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <description></description>
+    <display-name>AllEventsServlet</display-name>
+    <servlet-name>AllEventsServlet</servlet-name>
+    <servlet-class>edu.cmu.eventtracker.servlet.EventTracker.AllEventsServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AllEventsServlet</servlet-name>
+    <url-pattern>/AllEventsServlet</url-pattern>
+  </servlet-mapping>
 </web-app>

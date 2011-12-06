@@ -23,10 +23,10 @@ import edu.cmu.eventtracker.action.ClearLocationsDBAction;
 import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.DisableSlaveFailover;
+import edu.cmu.eventtracker.action.GetAllEventsAction;
 import edu.cmu.eventtracker.action.GetLocationAction;
 import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.GetUserEvents;
-import edu.cmu.eventtracker.action.GetUserLocations;
 import edu.cmu.eventtracker.action.InsertEventAction;
 import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
@@ -41,10 +41,10 @@ import edu.cmu.eventtracker.actionhandler.ClearUsersDBHandler;
 import edu.cmu.eventtracker.actionhandler.CreateEventHandler;
 import edu.cmu.eventtracker.actionhandler.DisableSlaveFailoverHandler;
 import edu.cmu.eventtracker.actionhandler.GeoServiceContext;
+import edu.cmu.eventtracker.actionhandler.GetAllEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetLocationHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserHandler;
-import edu.cmu.eventtracker.actionhandler.GetUserLocationsHandler;
 import edu.cmu.eventtracker.actionhandler.InsertEventHandler;
 import edu.cmu.eventtracker.actionhandler.InsertLocationHandler;
 import edu.cmu.eventtracker.actionhandler.LocationHeartbeatHandler;
@@ -121,8 +121,6 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		getActionHandlerMap().put(GetUserAction.class, new GetUserHandler());
 		getActionHandlerMap().put(GetUserEvents.class,
 				new GetUserEventsHandler());
-		getActionHandlerMap().put(GetUserLocations.class,
-				new GetUserLocationsHandler());
 		getActionHandlerMap().put(LocationHeartbeatAction.class,
 				new LocationHeartbeatHandler());
 		getActionHandlerMap().put(CreateEventAction.class,
@@ -131,6 +129,10 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				new InsertLocationHandler());
 		getActionHandlerMap().put(InsertEventAction.class,
 				new InsertEventHandler());
+		getActionHandlerMap().put(GetAllEventsAction.class,
+				new GetAllEventsHandler());
+		getActionHandlerMap().put(GetUserEvents.class,
+				new GetUserEventsHandler());
 		getActionHandlerMap().put(BatchAction.class, new BatchHandler());
 		getActionHandlerMap().put(PingAction.class, new PingHandler());
 		getActionHandlerMap().put(ReplicationAction.class,
