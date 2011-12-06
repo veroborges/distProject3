@@ -28,6 +28,8 @@
     };
     map = new google.maps.Map(document.getElementById("map_canvas"),
         myOptions);
+    
+    markers = new Array();
 
   }
   
@@ -56,7 +58,7 @@
 	console.log(username.value);
     $.post('UserLocationsServlet', {username: username.value}, function(data) {
 		console.log(data);
-		$.each(data, function(key, event) { //data.events?
+		$.each(data, function(key, event) {
 			addMarker(event);
 		});
       });

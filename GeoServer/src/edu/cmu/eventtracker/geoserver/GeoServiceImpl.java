@@ -24,11 +24,8 @@ import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.DisableSlaveFailover;
 import edu.cmu.eventtracker.action.GetAllEventsAction;
-<<<<<<< HEAD
 import edu.cmu.eventtracker.action.GetEventAction;
-=======
 import edu.cmu.eventtracker.action.GetLocationAction;
->>>>>>> 7708942ca1856ca4f50643589196ad5243da94ef
 import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.action.GetUserLocations;
@@ -47,11 +44,8 @@ import edu.cmu.eventtracker.actionhandler.CreateEventHandler;
 import edu.cmu.eventtracker.actionhandler.DisableSlaveFailoverHandler;
 import edu.cmu.eventtracker.actionhandler.GeoServiceContext;
 import edu.cmu.eventtracker.actionhandler.GetAllEventsHandler;
-<<<<<<< HEAD
 import edu.cmu.eventtracker.actionhandler.GetEventHandler;
-=======
 import edu.cmu.eventtracker.actionhandler.GetLocationHandler;
->>>>>>> 7708942ca1856ca4f50643589196ad5243da94ef
 import edu.cmu.eventtracker.actionhandler.GetUserEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserLocationsHandler;
@@ -98,11 +92,13 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			HessianProxyFactory factory = new HessianProxyFactory();
 			factory.setConnectTimeout(TIMEOUT);
 			factory.setReadTimeout(TIMEOUT);
+
 			ServerLocatorService service = (ServerLocatorService) factory
 					.create(ServerLocatorService.class, serverLocatorURL);
 			ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
-			services.add(locatorService);
-			locatorService = new ServerLocatorCache(services);
+			services.add(service);
+			setLocatorService(new ServerLocatorCache(services));
+
 			ShardResponse locationShard = getLocatorService()
 					.findLocationShard(url);
 			if (master) {
@@ -226,6 +222,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			}
 		}
 	}
+
 	public HashMap<Class<? extends Action<?>>, ActionHandler<?, ?>> getActionHandlerMap() {
 		return actionHandlerMap;
 	}
@@ -254,16 +251,6 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		return url;
 	}
 
-<<<<<<< HEAD
-	public ServerLocatorCache getLocatorService() {
-		return locatorService;
-	}
-
-	public void setLocatorService(ServerLocatorCache locatorService) {
-		this.locatorService = locatorService;
-	}
-
-=======
 	public boolean isSlaveFailover() {
 		Boolean attribute = (Boolean) getServletContext().getAttribute(
 				SLAVE_FAILOVER);
@@ -275,5 +262,12 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	public void disableSlaveFailover() {
 		getServletContext().setAttribute(SLAVE_FAILOVER, false);
 	}
->>>>>>> 7708942ca1856ca4f50643589196ad5243da94ef
+
+	public ServerLocatorCache getLocatorService() {
+		return locatorService;
+	}
+
+	public void setLocatorService(ServerLocatorCache locatorService) {
+		this.locatorService = locatorService;
+	}
 }
