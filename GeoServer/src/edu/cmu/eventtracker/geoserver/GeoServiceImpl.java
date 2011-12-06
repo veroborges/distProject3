@@ -13,6 +13,7 @@ import javax.servlet.ServletException;
 
 import com.caucho.hessian.client.HessianConnectionException;
 import com.caucho.hessian.client.HessianProxyFactory;
+import com.caucho.hessian.client.HessianRuntimeException;
 import com.caucho.hessian.server.HessianServlet;
 
 import edu.cmu.eventtracker.action.Action;
@@ -21,6 +22,8 @@ import edu.cmu.eventtracker.action.BatchAction;
 import edu.cmu.eventtracker.action.ClearLocationsDBAction;
 import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
+import edu.cmu.eventtracker.action.DisableSlaveFailover;
+import edu.cmu.eventtracker.action.GetLocationAction;
 import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.action.GetUserLocations;
@@ -36,7 +39,9 @@ import edu.cmu.eventtracker.actionhandler.BatchHandler;
 import edu.cmu.eventtracker.actionhandler.ClearLocationsDBHandler;
 import edu.cmu.eventtracker.actionhandler.ClearUsersDBHandler;
 import edu.cmu.eventtracker.actionhandler.CreateEventHandler;
+import edu.cmu.eventtracker.actionhandler.DisableSlaveFailoverHandler;
 import edu.cmu.eventtracker.actionhandler.GeoServiceContext;
+import edu.cmu.eventtracker.actionhandler.GetLocationHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserLocationsHandler;
@@ -61,6 +66,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	private Replicator replicator;
 	private UserShardReplicator userShardReplicator;
 	private String url;
+	private String otherGeoServiceUrl;
 
 	@Override
 	public void init() throws ServletException {
@@ -87,16 +93,19 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			if (master) {
 				otherGeoService = (GeoService) factory.create(GeoService.class,
 						locationShard.getSlave());
-				replicator = new Replicator(otherGeoService);
-				replicator.start();
+				otherGeoServiceUrl = locationShard.getSlave();
 			} else {
 				otherGeoService = (GeoService) factory.create(GeoService.class,
 						locationShard.getMaster());
+				otherGeoServiceUrl = locationShard.getMaster();
 			}
 			ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
 			services.add(locatorService);
-			userShardReplicator = new UserShardReplicator(master, services);
-			getUserShardReplicator().start();
+			replicator = new Replicator(otherGeoService, url);
+			replicator.start();
+			userShardReplicator = new UserShardReplicator(services, url);
+			userShardReplicator.start();
+
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		} catch (UnknownHostException e) {
@@ -126,21 +135,35 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		getActionHandlerMap().put(PingAction.class, new PingHandler());
 		getActionHandlerMap().put(ReplicationAction.class,
 				new ReplicationHandler());
+		getActionHandlerMap().put(DisableSlaveFailover.class,
+				new DisableSlaveFailoverHandler());
+		getActionHandlerMap().put(GetLocationAction.class,
+				new GetLocationHandler());
+		if (master) {
+			try {
+				otherGeoService.execute(new DisableSlaveFailover());
+			} catch (HessianRuntimeException e) {
+				System.out.println("The slave is down");
+			} catch (HessianConnectionException e) {
+				System.out.println("The slave is down");
+			}
+		}
 	}
 
 	@Override
 	public <A extends Action<R>, R> R execute(A action) {
 		boolean commit = true;
-		GeoServiceContext context = new GeoServiceContext(this);
+		GeoServiceContext context = new GeoServiceContext(this,
+				action instanceof ReplicationAction);
 		if (!master && !(action instanceof ReplicationAction)
-				&& !(action instanceof ReadOnlyAction)) {
-			Boolean attribute = (Boolean) getServletContext().getAttribute(
-					SLAVE_FAILOVER);
-			if (attribute == null || !attribute) {
+				&& !(action instanceof ReadOnlyAction)
+				&& !(action instanceof DisableSlaveFailover)) {
+			if (!isSlaveFailover()) {
 				try {
 					otherGeoService.execute(new PingAction());
-					throw new IllegalStateException(
-							"Can't query slave for mutable operations when master is up");
+					throw new ExecuteOnMasterException();
+				} catch (HessianRuntimeException e) {
+					getServletContext().setAttribute(SLAVE_FAILOVER, true);
 				} catch (HessianConnectionException e) {
 					getServletContext().setAttribute(SLAVE_FAILOVER, true);
 				}
@@ -159,8 +182,12 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 					locationsConnection.commit();
 					if (!context.getActionLog().isEmpty()) {
 						try {
-							replicator.replicateAction(new BatchAction(context
-									.getActionLog()));
+							if (!(action instanceof ReplicationAction)
+									|| !((ReplicationAction) action)
+											.getSourceUrl().equals(null)) {
+								replicator.replicateAction(new BatchAction(
+										context.getActionLog()));
+							}
 							userShardReplicator.replicateActions(context
 									.getUserShardActionLog());
 						} catch (InterruptedException e) {
@@ -180,7 +207,6 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			}
 		}
 	}
-
 	public HashMap<Class<? extends Action<?>>, ActionHandler<?, ?>> getActionHandlerMap() {
 		return actionHandlerMap;
 	}
@@ -209,4 +235,15 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		return url;
 	}
 
+	public boolean isSlaveFailover() {
+		Boolean attribute = (Boolean) getServletContext().getAttribute(
+				SLAVE_FAILOVER);
+		if (attribute == null)
+			return false;
+		return attribute;
+	}
+
+	public void disableSlaveFailover() {
+		getServletContext().setAttribute(SLAVE_FAILOVER, false);
+	}
 }

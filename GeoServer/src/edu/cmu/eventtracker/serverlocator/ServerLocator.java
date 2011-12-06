@@ -65,7 +65,8 @@ public class ServerLocator {
 	public void stop() throws Exception {
 		server.stop();
 		try {
-			DriverManager.getConnection(protocol + ";shutdown=true");
+			DriverManager.getConnection(protocol + "shardsDB" + port
+					+ ";shutdown=true");
 		} catch (SQLException e) {
 
 		}

@@ -54,7 +54,7 @@ public class InsertLocationHandler
 									: "location db") + " " + location.getId());
 			statement.execute();
 
-			if (!action.isForUserShard()) {
+			if (!action.isForUserShard() && geoContext.getService().isMaster()) {
 				InsertLocationAction locationAction = new InsertLocationAction(
 						action.getLocation());
 				locationAction.setForUserShard(true);

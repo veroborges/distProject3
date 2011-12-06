@@ -21,7 +21,7 @@ public class GeoServer {
 	private int port;
 	private Server server;
 	static {
-		Logger.getLogger("GeoServer").setLevel(Level.INFO);
+		Logger.getLogger("GeoServer").setLevel(Level.FINE);
 	}
 
 	public GeoServer(int port, boolean master, String serverLocatorURL) {
@@ -105,7 +105,10 @@ public class GeoServer {
 	public void stop() throws Exception {
 		server.stop();
 		try {
-			DriverManager.getConnection(protocol + ";shutdown=true");
+			DriverManager.getConnection(protocol + "locationsDB" + port
+					+ ";shutdown=true");
+			DriverManager.getConnection(protocol + "usersDB" + port
+					+ ";shutdown=true");
 		} catch (SQLException e) {
 
 		}

@@ -15,12 +15,9 @@ public class ServerLocatorCache implements ServerLocatorService {
 	private Cache<String, GeoService> userShardCache = new Cache<String, GeoService>();
 	private Cache<ShardResponse, GeoService> locationShardCache = new Cache<ShardResponse, GeoService>();
 	private int pos = 0;
-	private boolean master;
 
-	public ServerLocatorCache(ArrayList<ServerLocatorService> services,
-			boolean master) {
+	public ServerLocatorCache(ArrayList<ServerLocatorService> services) {
 		this.services = services;
-		this.master = master;
 	}
 
 	public GeoService getUserShardServer(String username) {
@@ -31,7 +28,6 @@ public class ServerLocatorCache implements ServerLocatorService {
 				try {
 					GeoServiceFacade facade = new GeoServiceFacade(services
 							.get(i).getUserShard(username));
-					facade.setMaster(master);
 					Calendar calendar = Calendar.getInstance();
 					calendar.add(Calendar.MINUTE, 20);
 					userShardCache.put(username, facade, calendar);
@@ -56,7 +52,6 @@ public class ServerLocatorCache implements ServerLocatorService {
 			GeoServiceFacade facade;
 			try {
 				facade = new GeoServiceFacade(response);
-				facade.setMaster(master);
 				Calendar calendar = Calendar.getInstance();
 				calendar.add(Calendar.MINUTE, 20);
 				locationShardCache.put(response, facade, calendar);

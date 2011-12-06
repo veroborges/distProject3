@@ -18,9 +18,11 @@ public class GeoServiceContext implements ActionContext {
 	private final ArrayList<ReplicatableAction<?>> actionLog = new ArrayList<ReplicatableAction<?>>();
 	private final ArrayList<UserShardAction> userShardActionLog = new ArrayList<UserShardAction>();
 	private final GeoServiceImpl service;
+	private final boolean replicating;
 
-	public GeoServiceContext(GeoServiceImpl service) {
+	public GeoServiceContext(GeoServiceImpl service, boolean replicating) {
 		this.service = service;
+		this.replicating = replicating;
 	}
 
 	public <A extends Action<R>, R> R execute(A action) {
@@ -35,7 +37,7 @@ public class GeoServiceContext implements ActionContext {
 					+ action.getClass().getSimpleName() + " was not found");
 		}
 		int lastSize = -1;
-		if (service.isMaster()) {
+		if (service.isMaster() || service.isSlaveFailover()) {
 			if (action instanceof Synchronous) {
 				lastSize = actionLog.size();
 			}
@@ -52,8 +54,11 @@ public class GeoServiceContext implements ActionContext {
 				replicatedList.add(iterator.next());
 				iterator.remove();
 			}
-			service.getOtherGeoService().execute(
-					new ReplicationAction(new BatchAction(replicatedList)));
+			if (!replicating) {
+				service.getOtherGeoService().execute(
+						new ReplicationAction(new BatchAction(replicatedList),
+								service.getUrl()));
+			}
 		}
 		return response;
 	}
