@@ -10,15 +10,16 @@ import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 
-public class GetUserEventsHandler implements
-		ActionHandler<GetUserEvents, List<Event>> {
+public class GetUserEventsHandler
+		implements
+			ActionHandler<GetUserEvents, List<Event>> {
 
 	@Override
 	public List<Event> performAction(GetUserEvents action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		List<Event> events = new ArrayList<Event>();
 		ResultSet rs = null;
-		Double lat, lng;
+		double lat, lng;
 
 		try {
 

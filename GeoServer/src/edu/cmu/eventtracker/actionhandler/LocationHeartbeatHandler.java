@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -71,15 +70,12 @@ public class LocationHeartbeatHandler implements
 		HashMap<String, Event> closeByEvents = new HashMap<String, Event>();
 		Point[] extremePointsFrom = GeoLocationService.getExtremePointsFrom(
 				new Point(lat, lng), RADIUS);
-		System.out.println(Arrays.toString(extremePointsFrom));
 		PreparedStatement s = geoContext
 				.getLocationsConnection()
 				.prepareStatement(
 						"select event_id, event.name as eventname, count(*) as count from location join "
 								+ "(Select username, max(timestamp) as timestamp from location  where ? <= lat and lat < ? and ? <= lng and lng < ? and timestamp > ? group by username)"
 								+ " s on (location.username = s.username and location.timestamp = s.timestamp) left join event on location.event_id = event.id group by event_id, event.name");
-		System.out.println(lat + " " + lng);
-		System.out.println(Arrays.toString(extremePointsFrom));
 		s.setDouble(1, extremePointsFrom[0].getLatitude());
 		s.setDouble(2, extremePointsFrom[1].getLatitude());
 		s.setDouble(3, extremePointsFrom[0].getLongitude());
@@ -90,9 +86,7 @@ public class LocationHeartbeatHandler implements
 		s.execute();
 		ResultSet rs = s.getResultSet();
 		while (rs.next()) {
-
 			int count = rs.getInt("count");
-			System.out.println(count);
 			String eventId = rs.getString("event_id");
 			Event event;
 			if (eventId != null) {
@@ -101,7 +95,6 @@ public class LocationHeartbeatHandler implements
 				event = new Event();
 			}
 			event.setParticipantCount(count);
-			System.out.println(event.getParticipantCount());
 			closeByEvents.put(eventId, event);
 		}
 

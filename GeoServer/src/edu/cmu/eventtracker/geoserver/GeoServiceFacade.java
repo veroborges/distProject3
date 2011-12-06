@@ -4,9 +4,9 @@ import java.net.MalformedURLException;
 
 import com.caucho.hessian.client.HessianConnectionException;
 import com.caucho.hessian.client.HessianProxyFactory;
+import com.caucho.hessian.client.HessianRuntimeException;
 
 import edu.cmu.eventtracker.action.Action;
-import edu.cmu.eventtracker.action.ReadOnlyAction;
 import edu.cmu.eventtracker.dto.ShardResponse;
 
 public class GeoServiceFacade implements GeoService {
@@ -14,7 +14,7 @@ public class GeoServiceFacade implements GeoService {
 	private GeoService masterServer;
 	private GeoService slaveServer;
 	private HessianProxyFactory factory;
-	private boolean master = true;
+	private boolean switchToSlave = false;
 
 	public GeoServiceFacade(ShardResponse shards) throws MalformedURLException {
 		factory = new HessianProxyFactory();
@@ -26,28 +26,31 @@ public class GeoServiceFacade implements GeoService {
 
 	@Override
 	public <A extends Action<R>, R> R execute(A action) {
-		if (action instanceof ReadOnlyAction) {
-			return slaveServer.execute(action);
-		} else if (isMaster()) {
+		if (!switchToSlave) {
 			try {
 				return masterServer.execute(action);
+			} catch (HessianRuntimeException e) {
+				R response = slaveServer.execute(action);
+				switchToSlave = true;
+				return response;
 			} catch (HessianConnectionException e) {
+				R response = slaveServer.execute(action);
+				switchToSlave = true;
+				return response;
+			}
+		} else {
+			try {
 				return slaveServer.execute(action);
+			} catch (ExecuteOnMasterException e) {
+				R response = masterServer.execute(action);
+				switchToSlave = false;
+				return response;
 			}
 		}
-		throw new IllegalStateException("Facade is misconfigured");
 	}
-
 	private GeoService getGeoServiceConnection(String url)
 			throws MalformedURLException {
 		return (GeoService) factory.create(GeoService.class, url);
 	}
 
-	public boolean isMaster() {
-		return master;
-	}
-
-	public void setMaster(boolean master) {
-		this.master = master;
-	}
 }
