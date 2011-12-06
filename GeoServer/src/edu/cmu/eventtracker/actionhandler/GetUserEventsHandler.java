@@ -21,26 +21,35 @@ public class GetUserEventsHandler implements
 		Double lat, lng;
 
 		try {
+
 			// statement to get all of a user's events
 			PreparedStatement userEventsStatement = geoContext
 					.getUsersConnection()
 					.prepareStatement(
-							"Select event_id, event.name as eventnamefrom event where exists" // timestamp?
-									+ "(Select eventId, max(timestamp) from location WHERE location.username = ? and eventId is not null)");
+							"select event_id from (select event_id, username, max(timestamp) as "
+									+ "timestamp from location where event_id is not null and username=? group by event_id, username) "
+									+ " join location on location.event_id = q.event_id and location.username = "
+									+ "q.username and location.timestamp = q.timestamp");
 
 			userEventsStatement.setString(1, action.getUsername());
 			rs = userEventsStatement.getResultSet();
 
 			// populate events list with events returned
 			while (rs.next()) {
-				lat = rs.getDouble(lat);
-				lng = rs.getDouble(lng);
-				Location loc = new Location(null, lat, lng, null, null, null);
-				Event event = new Event(rs.getString("event_id"),
-						rs.getString("eventname"), loc);
-				events.add(event);
+				geoContext
+						.getService()
+						.getLocatorService()
+						.getLocationShard(rs.getDouble("lat"),
+								rs.getDouble("lng"));
 			}
 
+			System.out.println(rs.next());
+			lat = rs.getDouble("location.lat");
+			lng = rs.getDouble("location.lng");
+			Location loc = new Location(null, lat, lng, null, null, null);
+			Event event = new Event(rs.getString("event_id"),
+					rs.getString("eventname"), loc);
+			events.add(event);
 			return events;
 
 		} catch (SQLException e) {

@@ -22,7 +22,7 @@
   </servlet>
   <servlet-mapping>
     <servlet-name>UserLocationsServlet</servlet-name>
-    <url-pattern>/locations.jsp</url-pattern>
+    <url-pattern>/UserLocationsServlet</url-pattern>
   </servlet-mapping>
   <servlet>
     <description></description>

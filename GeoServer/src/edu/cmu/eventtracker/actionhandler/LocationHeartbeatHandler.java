@@ -14,15 +14,15 @@ import java.util.UUID;
 import com.effectiveJava.GeoLocationService;
 import com.effectiveJava.Point;
 
+import edu.cmu.eventtracker.action.GetEventAction;
 import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
 
-public class LocationHeartbeatHandler
-		implements
-			ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
+public class LocationHeartbeatHandler implements
+		ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
 
 	public static final double RADIUS = 0.5; // km
 	public static final int MIN_COUNT = 4;
@@ -94,10 +94,9 @@ public class LocationHeartbeatHandler
 			int count = rs.getInt("count");
 			System.out.println(count);
 			String eventId = rs.getString("event_id");
-			closeByEvents.put(eventId, getEvent(eventId, geoContext));
 			Event event;
 			if (eventId != null) {
-				event = getEvent(eventId, geoContext);
+				event = geoContext.execute(new GetEventAction(eventId));
 			} else {
 				event = new Event();
 			}
@@ -120,24 +119,4 @@ public class LocationHeartbeatHandler
 		}
 	}
 
-	public static Event getEvent(String eventId, GeoServiceContext geoContext)
-			throws SQLException {
-		PreparedStatement s = geoContext
-				.getLocationsConnection()
-				.prepareStatement(
-						"select event.id as event_id, name, location.id as location_id, lat, lng, username, location.timestamp as location_timestamp, min(location.timestamp) from location join event on location.event_id = event.id where event.id=? group by event.id, name, location.id, lat, lng, username, location.timestamp");
-		s.setString(1, eventId);
-		s.execute();
-		ResultSet rs = s.getResultSet();
-		while (rs.next()) {
-			Event event = new Event(rs.getString("event_id"),
-					rs.getString("name"), new Location(
-							rs.getString("location_id"), rs.getDouble("lat"),
-							rs.getDouble("lng"), rs.getString("username"),
-							rs.getString("event_id"), new Date(rs.getTimestamp(
-									"location_timestamp").getTime())));
-			return event;
-		}
-		return null;
-	}
 }

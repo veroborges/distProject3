@@ -7,6 +7,10 @@ import edu.cmu.eventtracker.dto.Event;
 public class GetUserEvents implements Action<List<Event>>, ReadOnlyAction {
 	private String username;
 
+	public GetUserEvents(String username) {
+		this.username = username;
+	}
+
 	public String getUsername() {
 		return username;
 	}

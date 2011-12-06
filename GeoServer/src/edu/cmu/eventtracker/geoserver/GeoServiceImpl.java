@@ -22,6 +22,7 @@ import edu.cmu.eventtracker.action.ClearLocationsDBAction;
 import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.GetAllEventsAction;
+import edu.cmu.eventtracker.action.GetEventAction;
 import edu.cmu.eventtracker.action.GetUserAction;
 import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.action.InsertEventAction;
@@ -38,6 +39,7 @@ import edu.cmu.eventtracker.actionhandler.ClearUsersDBHandler;
 import edu.cmu.eventtracker.actionhandler.CreateEventHandler;
 import edu.cmu.eventtracker.actionhandler.GeoServiceContext;
 import edu.cmu.eventtracker.actionhandler.GetAllEventsHandler;
+import edu.cmu.eventtracker.actionhandler.GetEventHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserHandler;
 import edu.cmu.eventtracker.actionhandler.InsertEventHandler;
@@ -46,6 +48,7 @@ import edu.cmu.eventtracker.actionhandler.LocationHeartbeatHandler;
 import edu.cmu.eventtracker.actionhandler.PingHandler;
 import edu.cmu.eventtracker.actionhandler.ReplicationHandler;
 import edu.cmu.eventtracker.dto.ShardResponse;
+import edu.cmu.eventtracker.serverlocator.ServerLocatorCache;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
 public class GeoServiceImpl extends HessianServlet implements GeoService {
@@ -56,7 +59,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 	private Connection usersConnection;
 	private Connection locationsConnection;
 	private boolean master;
-	private ServerLocatorService locatorService;
+	private ServerLocatorCache locatorService;
 	private GeoService otherGeoService;
 	private Replicator replicator;
 	private UserShardReplicator userShardReplicator;
@@ -81,9 +84,13 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 			HessianProxyFactory factory = new HessianProxyFactory();
 			factory.setConnectTimeout(TIMEOUT);
 			factory.setReadTimeout(TIMEOUT);
-			locatorService = (ServerLocatorService) factory.create(
-					ServerLocatorService.class, serverLocatorURL);
-			ShardResponse locationShard = locatorService.findLocationShard(url);
+			ServerLocatorService locatorService = (ServerLocatorService) factory
+					.create(ServerLocatorService.class, serverLocatorURL);
+			ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
+			services.add(locatorService);
+			setLocatorService(new ServerLocatorCache(services, master));
+			ShardResponse locationShard = getLocatorService()
+					.findLocationShard(url);
 			if (master) {
 				otherGeoService = (GeoService) factory.create(GeoService.class,
 						locationShard.getSlave());
@@ -94,7 +101,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 						locationShard.getMaster());
 			}
 			ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
-			services.add(locatorService);
+			services.add(getLocatorService());
 			userShardReplicator = new UserShardReplicator(master, services);
 			getUserShardReplicator().start();
 		} catch (SQLException e) {
@@ -128,6 +135,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 		getActionHandlerMap().put(PingAction.class, new PingHandler());
 		getActionHandlerMap().put(ReplicationAction.class,
 				new ReplicationHandler());
+		getActionHandlerMap().put(GetEventAction.class, new GetEventHandler());
 	}
 
 	@Override
@@ -209,6 +217,14 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 
 	public String getUrl() {
 		return url;
+	}
+
+	public ServerLocatorCache getLocatorService() {
+		return locatorService;
+	}
+
+	public void setLocatorService(ServerLocatorCache locatorService) {
+		this.locatorService = locatorService;
 	}
 
 }
