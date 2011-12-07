@@ -67,9 +67,10 @@ public class AllEventsServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		ArrayList<ShardResponse> shards = (ArrayList<ShardResponse>) locatorService.getAllLocationShards();
 		List<Event> events = new ArrayList<Event>();
+		GeoService geoService;
 		 
 		for (ShardResponse shard: shards){
-			 GeoService geoService = new GeoServiceFacade(shard);
+			 geoService = new GeoServiceFacade(shard);
 			 events.addAll(geoService.execute(new GetAllEventsAction()));
 		}
 

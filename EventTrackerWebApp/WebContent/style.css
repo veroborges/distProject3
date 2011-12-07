@@ -37,7 +37,8 @@ font-size: 12px;
 padding: 2px;
 }
 
-input:focus {outline-color: #04a5e5; }
+input:focus {
+	outline-color: #058bbc; }
 
 .button {
 	height: 25px;
