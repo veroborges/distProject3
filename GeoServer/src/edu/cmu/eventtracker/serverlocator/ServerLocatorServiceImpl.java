@@ -14,8 +14,9 @@ import com.caucho.hessian.server.HessianServlet;
 
 import edu.cmu.eventtracker.dto.ShardResponse;
 
-public class ServerLocatorServiceImpl extends HessianServlet implements
-		ServerLocatorService {
+public class ServerLocatorServiceImpl extends HessianServlet
+		implements
+			ServerLocatorService {
 	private static final String protocol = "jdbc:derby:";
 
 	private Connection shardsConnection;
@@ -118,13 +119,19 @@ public class ServerLocatorServiceImpl extends HessianServlet implements
 
 		try {
 			PreparedStatement locationsStatement = shardsConnection
-					.prepareStatement("Select master, slave from locationshard");
+					.prepareStatement("Select * from locationshard");
 
 			locationsStatement.execute();
 			rs = locationsStatement.getResultSet();
 			if (rs.next()) {
-				shards.add(new ShardResponse(rs.getString("master"), rs
-						.getString("slave")));
+				ShardResponse response = new ShardResponse(
+						rs.getString("master"), rs.getString("slave"));
+
+				response.setLatmin(rs.getDouble("latmin"));
+				response.setLngmin(rs.getDouble("lngmin"));
+				response.setLatmax(rs.getDouble("latmax"));
+				response.setLngmax(rs.getDouble("lngmax"));
+				shards.add(response);
 			}
 
 			return shards;

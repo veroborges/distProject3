@@ -6,7 +6,10 @@ public class ShardResponse implements Serializable {
 
 	private String master;
 	private String slave;
-
+	private double latmin;
+	private double lngmin;
+	private double latmax;
+	private double lngmax;
 	public ShardResponse() {
 	}
 
