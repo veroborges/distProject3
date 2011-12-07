@@ -47,7 +47,7 @@
 	    var boundsSW = map.getBounds().getSouthWest();
 
 	    $.post('AllEventsServlet', {lat2: boundsNE.lat(), lat1: boundsSW.lat(),lng2: boundsNE.lng(), lng1: boundsSW.lng()}, function(data) {
-	    	console.log(data);
+	    	//console.log(data);
 	    		$.each(data, function(key, event) {
 	    			addMarker(event);
 	    		});

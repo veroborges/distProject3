@@ -35,6 +35,32 @@
     google.maps.event.addListener(map, 'dblclick', function(event) {
       addUserMarker(event.latLng);
     });
+    
+    $.getJSON('EventTrackerServlet', function(data) {
+		console.log(data);
+		$.each(data, function(key, shard) {
+			  drawShardBoundary(shard.latmin, shard.latmax, shard.lngmin, shard.lngmax);
+			});
+  });
+    
+  }
+  
+  function drawShardBoundary(latmin, latmax, lngmin, lngmax){
+	  var bounds = google.maps.LatLngBounds(new google.maps.LatLng(latmin, lngmin), new google.maps.LatLng(latmax, lngmax));
+
+	  var rectangle = new google.maps.Rectangle();
+	  
+	  var rectOptions = {
+		      strokeColor: "#FF0000",
+		      strokeOpacity: 0.8,
+		      strokeWeight: 2,
+		      fillColor: "#FF0000",
+		      fillOpacity: 0.35,
+		      map: map,
+		      bounds: bounds
+		    };
+	  
+		    rectangle.setOptions(rectOptions);
   }
   
 
@@ -42,12 +68,12 @@ function timedPing(markerId){
   var marker = markers[markerId];
   var lng = marker.getPosition().lng();
   var lat = marker.getPosition().lat();
-  console.log("user:" + marker.username + " lng:" + lng + " lat:" + lat);
+  //console.log("user:" + marker.username + " lng:" + lng + " lat:" + lat);
 
   t=setTimeout("timedPing(" + markerId +")",10000);
 
   $.getJSON('EventTrackerServlet',  {pUser : marker.username, pLat: lat, pLng: lng, pEventId: marker.eventid}, function(data) {
-		console.log(data);
+		//console.log(data);
 		
 		marker.events = [];
 		
@@ -139,12 +165,12 @@ function timedPing(markerId){
   }
   
   function saveData(form) { 
-	  console.log(form.markerId.value);
+	  //console.log(form.markerId.value);
 	  var markerIdNum = parseInt(form.markerId.value);
 	  var marker = markers[markerIdNum];
 
       $.post('EventTrackerServlet', {mUser : form.username.value, mName: form.name.value, mPass: form.pwd.value}, function(data) { 
-          	console.log(data);
+          	//console.log(data);
       		$('#message').html("User" + data + "Added");
             marker.username = data;            
             marker.infoWindow.close();
@@ -157,18 +183,18 @@ function timedPing(markerId){
     }
   
   function createNewEvent(form) { 
-	  console.log(form.markerId.value);
+	  //console.log(form.markerId.value);
 	  var markerIdNum = parseInt(form.markerId.value);
 	  var marker = markers[markerIdNum];
 	  var lng = marker.getPosition().lng();
 	  var lat = marker.getPosition().lat();
 	  
-	  console.log("user:" + marker.username + " lng:" + lng + " lat:" + lat + "new event:" + form.eventname.value);
+	  //console.log("user:" + marker.username + " lng:" + lng + " lat:" + lat + "new event:" + form.eventname.value);
 
 	  $.post('EventTrackerServlet',  {cUser : marker.username, cLat: lat, cLng: lng, cEventName: form.eventname.value}, function(data) {
-		  console.log(data);
+		  //console.log(data);
 		   marker.eventid = data.id;
-		   console.log(data.id);
+		   //console.log(data.id);
 		   marker.eventname = data.name;
 		   marker.infoWindow.close();
 		   marker.infoWindow.setContent("<h4>You just joined " + marker.eventname + "</h4>");
@@ -177,11 +203,11 @@ function timedPing(markerId){
     }
   
   function joinEvent(form) { 
-	  console.log(form.markerId.value);
+	  //console.log(form.markerId.value);
 	  var markerIdNum = parseInt(form.markerId.value);
 	  var marker = markers[markerIdNum];
-	  console.log("Selected:" + form.events.selectedIndex);
-	  console.log(marker.events);
+	  //console.log("Selected:" + form.events.selectedIndex);
+	  //console.log(marker.events);
 	  marker.eventid = marker.events[form.events.selectedIndex-1].id;
 	  marker.eventname = marker.events[form.events.selectedIndex-1].name;
 	  marker.events = [];

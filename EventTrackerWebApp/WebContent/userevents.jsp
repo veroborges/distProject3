@@ -53,11 +53,18 @@
     	});
     }
   
+  function clearMarkers() {
+	  for (var i = 0; i < markers.length; i++){
+		  markers[i].setMap(null);
+	  }
+  }
+  
   function getHistory(username){
-	console.log("hereee");
-	console.log(username.value);
+	  clearMarkers();
+	//console.log("hereee");
+	//console.log(username.value);
     $.post('UserLocationsServlet', {username: username.value}, function(data) {
-		console.log(data);
+		//console.log(data);
 		$.each(data, function(key, event) {
 			addMarker(event);
 		});

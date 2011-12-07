@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -17,10 +18,12 @@ import com.google.gson.GsonBuilder;
 
 import edu.cmu.eventtracker.action.AddUserAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
+import edu.cmu.eventtracker.action.GetAllEventsAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
+import edu.cmu.eventtracker.dto.ShardResponse;
 import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.geoserver.GeoServiceFacade;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
@@ -62,32 +65,44 @@ public class EventTrackerServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException {
 		String username = request.getParameter("pUser");
-		String lat = request.getParameter("pLat");
-		String lng = request.getParameter("pLng");
-		String eventid = request.getParameter("pEventId");
+		if (username != null){
+			String lat = request.getParameter("pLat");
+			String lng = request.getParameter("pLng");
+			String eventid = request.getParameter("pEventId");
 
-		if (eventid == null || eventid.equals("null")) {
-			eventid = null;
-		}
+			if (eventid == null || eventid.equals("null")) {
+				eventid = null;
+			}
 
-		double latD = Double.parseDouble(lat);
-		double lngD = Double.parseDouble(lng);
+			double latD = Double.parseDouble(lat);
+			double lngD = Double.parseDouble(lng);
 
-		Location loc = new Location(null, latD, lngD, username, eventid, null);
+			Location loc = new Location(null, latD, lngD, username, eventid, null);
 
-		LocationHeartbeatResponse res = new GeoServiceFacade(
+			LocationHeartbeatResponse res = new GeoServiceFacade(
 				locatorService.getLocationShard(latD, lngD))
 				.execute(new LocationHeartbeatAction(loc));
 
-		System.out.println("can create:" + res.canCreateEvent());
-		System.out.println("events:" + res.getEvents());
-		gson = new GsonBuilder().create();
-		String json = gson.toJson(res);
+			System.out.println("can create:" + res.canCreateEvent());
+			System.out.println("events:" + res.getEvents());
+			gson = new GsonBuilder().create();
+			String json = gson.toJson(res);
 
-		response.setContentType("application/json");
-		response.setCharacterEncoding("UTF-8");
-		response.getWriter().write(json);
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(json);
+		}
+		
+		else{
+			ArrayList<ShardResponse> shards = (ArrayList<ShardResponse>) locatorService.getAllLocationShards();
+			System.out.println("shard size" + shards.size());
+			gson = new GsonBuilder().create();
+			String json = gson.toJson(shards);
 
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(json);
+		}
 	}
 
 	/**
