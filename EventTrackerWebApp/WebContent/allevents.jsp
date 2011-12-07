@@ -31,15 +31,34 @@
     map = new google.maps.Map(document.getElementById("map_canvas"),
         myOptions);
     
-
-    $.post('AllEventsServlet', function(data) {
-    	console.log(data);
-    		$.each(data, function(key, event) {
-    			addMarker(event);
-    		});
-          });   
+    google.maps.event.addListener(map, 'tilesloaded', function(){
+    	getNewMarkers();
+    });
+    
+    google.maps.event.addListener(map, 'bounds_changed', function(){
+    	clearMarkers();
+    	getNewMarkers();
+    });
+    
   }
   
+  function getNewMarkers(){
+	    var boundsNE = map.getBounds().getNorthEast();
+	    var boundsSW = map.getBounds().getSouthWest();
+
+	    $.post('AllEventsServlet', {lat2: boundsNE.lat(), lat1: boundsSW.lat(),lng2: boundsNE.lng(), lng1: boundsSW.lng()}, function(data) {
+	    	console.log(data);
+	    		$.each(data, function(key, event) {
+	    			addMarker(event);
+	    		});
+	          });   
+  }
+  
+  function clearMarkers() {
+	  for (var i = 0; i < markers.length; i++){
+		  markers[i].setMap(null);
+	  }
+  }
   
   function addMarker(event){
 	  latlng = new google.maps.LatLng(event.location.lat, event.location.lng);
@@ -51,11 +70,10 @@
 		    infoWindow: new google.maps.InfoWindow()
 		  });
 	  
-	  markers.push(marker);	  
 	  marker.setMap(map);
 	  marker.infoWindow.setContent("<h4>"+ marker.title + "</h4>")
-	  marker.infoWindow.open(map,marker);
-	  
+	  markers.push(marker);	  
+
   	  google.maps.event.addListener(marker, "click", function() {
           marker.infoWindow.open(map, marker);
     	});
