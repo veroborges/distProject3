@@ -4,6 +4,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 
 import edu.cmu.eventtracker.dto.ShardResponse;
 import edu.cmu.eventtracker.geoserver.GeoService;
@@ -85,6 +86,7 @@ public class ServerLocatorCache implements ServerLocatorService {
 	private class CacheEntry<V> {
 		V value;
 		Calendar date;
+
 		public CacheEntry(V value, Calendar date) {
 			this.value = value;
 			this.date = date;
@@ -156,4 +158,20 @@ public class ServerLocatorCache implements ServerLocatorService {
 		throw lastException;
 	}
 
+	@Override
+	public List<ShardResponse> getAllLocationShards() {
+		RuntimeException lastException = null;
+		List<ShardResponse> shards = new ArrayList<ShardResponse>();
+
+		for (int i = 0; i < services.size(); i++) {
+			try {
+				shards.addAll(services.get(i).getAllLocationShards());
+			} catch (RuntimeException e) {
+				lastException = e;
+			}
+			pos = (pos + 1) % services.size();
+		}
+		// throw lastException?
+		return shards;
+	}
 }

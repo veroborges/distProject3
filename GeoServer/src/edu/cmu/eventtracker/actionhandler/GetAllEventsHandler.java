@@ -4,10 +4,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import edu.cmu.eventtracker.action.GetAllEventsAction;
 import edu.cmu.eventtracker.dto.Event;
+import edu.cmu.eventtracker.dto.Location;
 
 public class GetAllEventsHandler implements
 		ActionHandler<GetAllEventsAction, List<Event>> {
@@ -16,42 +18,31 @@ public class GetAllEventsHandler implements
 	public List<Event> performAction(GetAllEventsAction action,
 			ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
-		List<Event> events = new ArrayList<Event>();
-		ResultSet rs = null;
-		Double lat, lng;
-
 		try {
-			// statement to get all of a user's events
-			PreparedStatement userEventsStatement = geoContext
-					.getUsersConnection().prepareStatement("");
+			PreparedStatement s = geoContext
+					.getLocationsConnection()
+					.prepareStatement(
+							"select distinct event.id as event_id, name, location.id as location_id, lat, lng, location.timestamp as location_timestamp, min(location.timestamp) from location join event on location.event_id = event.id group by event.id, name, location.id, lat, lng, location.timestamp");
 
-			// userEventsStatement.setString(1, action.getUsername());
-			// rs = userEventsStatement.getResultSet();
-
-			// populate events list with events returned
+			s.execute();
+			ResultSet rs = s.getResultSet();
+			List<Event> events = new ArrayList<Event>();
 
 			while (rs.next()) {
-				// lat = rs.getDouble(lat);
-				// lng = rs.getDouble(lng);
-				// Location loc = new Location(null, lat, lng, null, null,
-				// null);
-				// Event event = new Event(rs.getString("event_id"),
-				// rs.getString("eventname"), loc);
-				// events.add(event);
+				Event event = new Event(rs.getString("event_id"),
+						rs.getString("name"), new Location(
+								rs.getString("location_id"),
+								rs.getDouble("lat"), rs.getDouble("lng"), null,
+								rs.getString("event_id"), new Date(rs
+										.getTimestamp("location_timestamp")
+										.getTime())));
+				events.add(event);
 			}
 
 			return events;
-
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
-		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException e) {
-					throw new IllegalStateException(e);
-				}
-			}
 		}
+
 	}
 }

@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.ServletException;
 
@@ -12,9 +14,8 @@ import com.caucho.hessian.server.HessianServlet;
 
 import edu.cmu.eventtracker.dto.ShardResponse;
 
-public class ServerLocatorServiceImpl extends HessianServlet
-		implements
-			ServerLocatorService {
+public class ServerLocatorServiceImpl extends HessianServlet implements
+		ServerLocatorService {
 	private static final String protocol = "jdbc:derby:";
 
 	private Connection shardsConnection;
@@ -97,6 +98,37 @@ public class ServerLocatorServiceImpl extends HessianServlet
 						rs.getString("slave"));
 			}
 			return null;
+		} catch (SQLException e) {
+			throw new IllegalStateException(e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		}
+	}
+
+	@Override
+	public List<ShardResponse> getAllLocationShards() {
+		ResultSet rs = null;
+		List<ShardResponse> shards = new ArrayList<ShardResponse>();
+
+		try {
+			PreparedStatement locationsStatement = shardsConnection
+					.prepareStatement("Select master, slave from locationshard");
+
+			locationsStatement.execute();
+			rs = locationsStatement.getResultSet();
+			if (rs.next()) {
+				shards.add(new ShardResponse(rs.getString("master"), rs
+						.getString("slave")));
+			}
+
+			return shards;
+
 		} catch (SQLException e) {
 			throw new IllegalStateException(e);
 		} finally {

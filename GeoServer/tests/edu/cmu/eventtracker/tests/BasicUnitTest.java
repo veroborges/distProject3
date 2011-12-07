@@ -28,6 +28,7 @@ import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.GetLocationAction;
 import edu.cmu.eventtracker.action.GetUserAction;
+import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.action.GetUserLocations;
 import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
@@ -434,5 +435,56 @@ public class BasicUnitTest {
 			Thread.sleep(100);
 		}
 		assertNotNull(found);
+	}
+
+	@Test(timeout = GeoService.TIMEOUT)
+	public void testgetUserEvents() throws Exception {
+		initShards();
+		startGeoServers(4);
+		double lng = 40.8;
+		double lat = -74;
+		int count = LocationHeartbeatHandler.MIN_COUNT + 10;
+		String user = "testUser";
+		int eventCounter = 0;
+		ArrayList<String> evJoined = new ArrayList<String>();
+
+		serverLocatorCache.getLocationShardServer(lat, lng).execute(
+				new LocationHeartbeatAction(new Location(null, lat, lng, user,
+						null, null)));
+
+		for (int i = 0; i < count; i++) {
+			String username = "user" + i;
+			LocationHeartbeatResponse response = serverLocatorCache
+					.getLocationShardServer(lat, lng).execute(
+							new LocationHeartbeatAction(new Location(null, lat,
+									lng, username, null, null)));
+
+			if (i >= LocationHeartbeatHandler.MIN_COUNT - 1) {
+				assertTrue(response.canCreateEvent());
+				Event event = serverLocatorCache.getLocationShardServer(lat,
+						lng).execute(
+						new CreateEventAction(lat, lng, username, "TestEvent"
+								+ i));
+
+				assertFalse(event == null);
+
+				response = serverLocatorCache.getLocationShardServer(lat, lng)
+						.execute(
+								new LocationHeartbeatAction(new Location(null,
+										lat, lng, user, event.getId(), null)));
+				eventCounter++;
+				evJoined.add(event.getId());
+			}
+
+		}
+
+		ArrayList<Event> events = (ArrayList<Event>) serverLocatorCache
+				.getUserShardServer(user).execute(new GetUserEvents(user));
+
+		assertTrue(events.size() == eventCounter);
+
+		for (Event e : events) {
+			assertTrue(evJoined.contains(e.getId()));
+		}
 	}
 }

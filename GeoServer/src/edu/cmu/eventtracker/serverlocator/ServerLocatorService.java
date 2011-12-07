@@ -1,5 +1,7 @@
 package edu.cmu.eventtracker.serverlocator;
 
+import java.util.List;
+
 import edu.cmu.eventtracker.dto.ShardResponse;
 
 public interface ServerLocatorService {
@@ -18,5 +20,7 @@ public interface ServerLocatorService {
 	public void clearTables();
 
 	public ShardResponse findLocationShard(String url);
+
+	public List<ShardResponse> getAllLocationShards();
 
 }

@@ -153,6 +153,7 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				new GetLocationHandler());
 		getActionHandlerMap().put(GetUserLocations.class,
 				new GetUserLocationsHandler());
+
 		if (master) {
 			try {
 				otherGeoService.execute(new DisableSlaveFailover());

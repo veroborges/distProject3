@@ -31,12 +31,13 @@
     map = new google.maps.Map(document.getElementById("map_canvas"),
         myOptions);
     
-    $.getJSON('AllEventsServlet', function(data) {
-		console.log(data);
-		$.each(data, function(key, event) {
-		  	addMarker(event);
-		});
-      });
+
+    $.post('AllEventsServlet', function(data) {
+    	console.log(data);
+    		$.each(data, function(key, event) {
+    			addMarker(event);
+    		});
+          });   
   }
   
   
@@ -53,12 +54,12 @@
 	  markers.push(marker);	  
 	  marker.setMap(map);
 	  marker.infoWindow.setContent("<h4>"+ marker.title + "</h4>")
-	
+	  marker.infoWindow.open(map,marker);
+	  
   	  google.maps.event.addListener(marker, "click", function() {
           marker.infoWindow.open(map, marker);
     	});
     }
-  
 </script>
 
 <body onload="initialize()">
