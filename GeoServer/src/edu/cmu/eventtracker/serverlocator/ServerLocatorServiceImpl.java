@@ -123,7 +123,7 @@ public class ServerLocatorServiceImpl extends HessianServlet
 
 			locationsStatement.execute();
 			rs = locationsStatement.getResultSet();
-			if (rs.next()) {
+			while (rs.next()) {
 				ShardResponse response = new ShardResponse(
 						rs.getString("master"), rs.getString("slave"));
 
