@@ -83,37 +83,38 @@ public class LocationHeartbeatHandler
 						extremePoints[0].getLongitude(), extremePoints[1]
 								.getLatitude(), extremePoints[1].getLongitude()));
 		lookupOtherServersCloseByEvents(extremePoints[0].getLatitude(),
-				extremePoints[0].getLongitude(), context, shards, events);
+				extremePoints[0].getLongitude(), context, shards, events,
+				extremePoints);
 		lookupOtherServersCloseByEvents(extremePoints[1].getLatitude(),
-				extremePoints[1].getLongitude(), context, shards, events);
+				extremePoints[1].getLongitude(), context, shards, events,
+				extremePoints);
 		lookupOtherServersCloseByEvents(extremePoints[0].getLatitude(),
-				extremePoints[1].getLongitude(), context, shards, events);
+				extremePoints[1].getLongitude(), context, shards, events,
+				extremePoints);
 		lookupOtherServersCloseByEvents(extremePoints[1].getLatitude(),
-				extremePoints[0].getLongitude(), context, shards, events);
+				extremePoints[0].getLongitude(), context, shards, events,
+				extremePoints);
 		return events;
 	}
 
 	private static void lookupOtherServersCloseByEvents(double lat, double lng,
 			GeoServiceContext context, HashSet<ShardResponse> shards,
-			HashMap<String, Event> allEvents) {
+			HashMap<String, Event> allEvents, Point[] extremePoints) {
 		ShardResponse locationShard = context.getService().getLocatorService()
 				.getLocationShard(lat, lng);
 		if (shards.contains(locationShard)) {
 			return;
 		}
 		shards.add(locationShard);
-		Point[] extremePointsFrom = GeoLocationService.getExtremePointsFrom(
-				new Point(lat, lng), LocationHeartbeatHandler.RADIUS);
 		HashMap<String, Event> events = context
 				.getService()
 				.getLocatorService()
 				.getLocationShardServer(lat, lng)
 				.execute(
-						new GetCloseByEvents(
-								extremePointsFrom[0].getLatitude(),
-								extremePointsFrom[0].getLongitude(),
-								extremePointsFrom[1].getLatitude(),
-								extremePointsFrom[1].getLongitude()));
+						new GetCloseByEvents(extremePoints[0].getLatitude(),
+								extremePoints[0].getLongitude(),
+								extremePoints[1].getLatitude(),
+								extremePoints[1].getLongitude()));
 		for (Entry<String, Event> entry : events.entrySet()) {
 			Event main = allEvents.get(entry.getKey());
 			if (main == null) {
