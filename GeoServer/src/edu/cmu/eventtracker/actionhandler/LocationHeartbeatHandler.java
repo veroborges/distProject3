@@ -1,11 +1,6 @@
 package edu.cmu.eventtracker.actionhandler;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
@@ -13,92 +8,54 @@ import java.util.UUID;
 import com.effectiveJava.GeoLocationService;
 import com.effectiveJava.Point;
 
-import edu.cmu.eventtracker.action.GetEventAction;
+import edu.cmu.eventtracker.action.GetCloseByEvents;
 import edu.cmu.eventtracker.action.InsertLocationAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.dto.Location;
 import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
 
-public class LocationHeartbeatHandler implements
-		ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
+public class LocationHeartbeatHandler
+		implements
+			ActionHandler<LocationHeartbeatAction, LocationHeartbeatResponse> {
 
-	public static final double RADIUS = 0.5; // km
 	public static final int MIN_COUNT = 4;
 	public static final int MAX_PERIOD = 60; // minutes
+	public static final double RADIUS = 0.5; // km
 
 	@Override
 	public LocationHeartbeatResponse performAction(
 			LocationHeartbeatAction action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 		LocationHeartbeatResponse response = new LocationHeartbeatResponse();
-		try {
-			Location location = action.getLocation();
-			location.setId(UUID.randomUUID().toString());
-			location.setTimestamp(new Date());
-			context.execute(new InsertLocationAction(location));
+		Location location = action.getLocation();
+		location.setId(UUID.randomUUID().toString());
+		location.setTimestamp(new Date());
+		context.execute(new InsertLocationAction(location));
 
-			HashMap<String, Event> closeByEvents = closeByEvents(
-					location.getLat(), location.getLng(), geoContext);
-			if (location.getEventId() != null) {
-				Event event = closeByEvents.get(location.getEventId());
-				if (event == null) {
-					throw new NullPointerException(
-							"Event with the given id was not found");
-				}
-				Point[] extremes = GeoLocationService.getExtremePointsFrom(
-						new Point(event.getLocation().getLat(), event
-								.getLocation().getLng()), RADIUS);
-				if (!(extremes[0].getLatitude() <= location.getLat()
-						&& extremes[0].getLongitude() <= location.getLng()
-						&& location.getLat() <= extremes[1].getLatitude() && location
-						.getLng() <= extremes[1].getLongitude())) {
-					throw new IllegalStateException(
-							"You are too far away from the original event");
-				}
+		HashMap<String, Event> closeByEvents = geoContext
+				.execute(new GetCloseByEvents(action.getLocation().getLat(),
+						action.getLocation().getLng()));
+		if (location.getEventId() != null) {
+			Event event = closeByEvents.get(location.getEventId());
+			if (event == null) {
+				throw new NullPointerException(
+						"Event with the given id was not found");
 			}
-			response.setEvents(new ArrayList<Event>(closeByEvents.values()));
-			response.setCanCreateEvent(canCreateNewEvents(closeByEvents));
-		} catch (SQLException e) {
-			throw new IllegalStateException(e);
+			Point[] extremes = GeoLocationService.getExtremePointsFrom(
+					new Point(event.getLocation().getLat(), event.getLocation()
+							.getLng()), RADIUS);
+			if (!(extremes[0].getLatitude() <= location.getLat()
+					&& extremes[0].getLongitude() <= location.getLng()
+					&& location.getLat() <= extremes[1].getLatitude() && location
+					.getLng() <= extremes[1].getLongitude())) {
+				throw new IllegalStateException(
+						"You are too far away from the original event");
+			}
 		}
+		response.setEvents(new ArrayList<Event>(closeByEvents.values()));
+		response.setCanCreateEvent(canCreateNewEvents(closeByEvents));
 		return response;
-	}
-
-	public static HashMap<String, Event> closeByEvents(double lat, double lng,
-			GeoServiceContext geoContext) throws SQLException {
-		HashMap<String, Event> closeByEvents = new HashMap<String, Event>();
-		Point[] extremePointsFrom = GeoLocationService.getExtremePointsFrom(
-				new Point(lat, lng), RADIUS);
-		PreparedStatement s = geoContext
-				.getLocationsConnection()
-				.prepareStatement(
-						"select event_id, event.name as eventname, count(*) as count from location join "
-								+ "(Select username, max(timestamp) as timestamp from location  where ? <= lat and lat < ? and ? <= lng and lng < ? and timestamp > ? group by username)"
-								+ " s on (location.username = s.username and location.timestamp = s.timestamp) left join event on location.event_id = event.id group by event_id, event.name");
-		s.setDouble(1, extremePointsFrom[0].getLatitude());
-		s.setDouble(2, extremePointsFrom[1].getLatitude());
-		s.setDouble(3, extremePointsFrom[0].getLongitude());
-		s.setDouble(4, extremePointsFrom[1].getLongitude());
-		Calendar calendar = Calendar.getInstance();
-		calendar.add(Calendar.MINUTE, -MAX_PERIOD);
-		s.setTimestamp(5, new Timestamp(calendar.getTime().getTime()));
-		s.execute();
-		ResultSet rs = s.getResultSet();
-		while (rs.next()) {
-			int count = rs.getInt("count");
-			String eventId = rs.getString("event_id");
-			Event event;
-			if (eventId != null) {
-				event = geoContext.execute(new GetEventAction(eventId));
-			} else {
-				event = new Event();
-			}
-			event.setParticipantCount(count);
-			closeByEvents.put(eventId, event);
-		}
-
-		return closeByEvents;
 	}
 
 	public static boolean canCreateNewEvents(

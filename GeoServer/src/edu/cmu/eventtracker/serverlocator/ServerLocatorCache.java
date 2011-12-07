@@ -26,6 +26,7 @@ public class ServerLocatorCache implements ServerLocatorService {
 		if (geoService == null) {
 			RuntimeException lastException = null;
 			for (int i = 0; i < services.size(); i++) {
+				pos = (pos + 1) % services.size();
 				try {
 					GeoServiceFacade facade = new GeoServiceFacade(services
 							.get(i).getUserShard(username));
@@ -38,7 +39,6 @@ public class ServerLocatorCache implements ServerLocatorService {
 				} catch (MalformedURLException e) {
 					lastException = new IllegalStateException(e);
 				}
-				pos = (pos + 1) % services.size();
 			}
 			throw lastException;
 		} else {
@@ -120,12 +120,12 @@ public class ServerLocatorCache implements ServerLocatorService {
 	public ShardResponse findLocationShard(String url) {
 		RuntimeException lastException = null;
 		for (int i = 0; i < services.size(); i++) {
+			pos = (pos + 1) % services.size();
 			try {
 				return services.get(i).findLocationShard(url);
 			} catch (RuntimeException e) {
 				lastException = e;
 			}
-			pos = (pos + 1) % services.size();
 		}
 		throw lastException;
 	}
@@ -134,12 +134,12 @@ public class ServerLocatorCache implements ServerLocatorService {
 	public ShardResponse getUserShard(String username) {
 		RuntimeException lastException = null;
 		for (int i = 0; i < services.size(); i++) {
+			pos = (pos + 1) % services.size();
 			try {
 				return services.get(i).getUserShard(username);
 			} catch (RuntimeException e) {
 				lastException = e;
 			}
-			pos = (pos + 1) % services.size();
 		}
 		throw lastException;
 	}
@@ -148,12 +148,12 @@ public class ServerLocatorCache implements ServerLocatorService {
 	public ShardResponse getLocationShard(double lat, double lng) {
 		RuntimeException lastException = null;
 		for (int i = 0; i < services.size(); i++) {
+			pos = (pos + 1) % services.size();
 			try {
 				return services.get(i).getLocationShard(lat, lng);
 			} catch (RuntimeException e) {
 				lastException = e;
 			}
-			pos = (pos + 1) % services.size();
 		}
 		throw lastException;
 	}
@@ -164,14 +164,14 @@ public class ServerLocatorCache implements ServerLocatorService {
 		List<ShardResponse> shards = new ArrayList<ShardResponse>();
 
 		for (int i = 0; i < services.size(); i++) {
+			pos = (pos + 1) % services.size();
 			try {
 				shards.addAll(services.get(i).getAllLocationShards());
+				return shards;
 			} catch (RuntimeException e) {
 				lastException = e;
 			}
-			pos = (pos + 1) % services.size();
 		}
-		// throw lastException?
-		return shards;
+		throw lastException;
 	}
 }
