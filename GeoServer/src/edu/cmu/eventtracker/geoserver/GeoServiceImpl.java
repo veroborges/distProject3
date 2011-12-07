@@ -24,6 +24,7 @@ import edu.cmu.eventtracker.action.ClearUsersDBAction;
 import edu.cmu.eventtracker.action.CreateEventAction;
 import edu.cmu.eventtracker.action.DisableSlaveFailover;
 import edu.cmu.eventtracker.action.GetAllEventsAction;
+import edu.cmu.eventtracker.action.GetCloseByEvents;
 import edu.cmu.eventtracker.action.GetEventAction;
 import edu.cmu.eventtracker.action.GetLocationAction;
 import edu.cmu.eventtracker.action.GetUserAction;
@@ -44,6 +45,7 @@ import edu.cmu.eventtracker.actionhandler.CreateEventHandler;
 import edu.cmu.eventtracker.actionhandler.DisableSlaveFailoverHandler;
 import edu.cmu.eventtracker.actionhandler.GeoServiceContext;
 import edu.cmu.eventtracker.actionhandler.GetAllEventsHandler;
+import edu.cmu.eventtracker.actionhandler.GetCloseByEventsHandler;
 import edu.cmu.eventtracker.actionhandler.GetEventHandler;
 import edu.cmu.eventtracker.actionhandler.GetLocationHandler;
 import edu.cmu.eventtracker.actionhandler.GetUserEventsHandler;
@@ -153,7 +155,8 @@ public class GeoServiceImpl extends HessianServlet implements GeoService {
 				new GetLocationHandler());
 		getActionHandlerMap().put(GetUserLocations.class,
 				new GetUserLocationsHandler());
-
+		getActionHandlerMap().put(GetCloseByEvents.class,
+				new GetCloseByEventsHandler());
 		if (master) {
 			try {
 				otherGeoService.execute(new DisableSlaveFailover());

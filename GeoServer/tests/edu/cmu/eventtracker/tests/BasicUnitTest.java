@@ -299,7 +299,7 @@ public class BasicUnitTest {
 		}
 	}
 
-	@Test
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testFailover() throws Exception {
 		initShards();
 		startGeoServers(4);
@@ -371,7 +371,7 @@ public class BasicUnitTest {
 		assertNotNull(ex);
 	}
 
-	@Test
+	@Test(timeout = GeoService.TIMEOUT)
 	public void testReplication() throws Exception {
 		initShards();
 		startGeoServers(4);
