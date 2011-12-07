@@ -82,8 +82,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testCreateUsers() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 
 		int counter = 0;
 		String username = "";
@@ -127,9 +129,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testUserSharding() throws Exception {
+		cleanServiceLocator();
 		initShards();
-		// figure out URL for locator service, assume DNS will take care of that
 		startGeoServers(4);
+		cleanGeo(4);
 		GeoService[] geoServices = getGeoServiceConnections(4);
 		testInsertUser("veronica", geoServices[0]);
 		testInsertUser("anar", geoServices[2]);
@@ -152,8 +155,26 @@ public class BasicUnitTest {
 		}
 
 		serverLocatorCache = new ServerLocatorCache(locatorServices);
-		getServiceLocator().clearTables();
+
 	}
+
+	public void cleanServiceLocator() throws MalformedURLException {
+		getServiceLocator().clearTables();
+
+	}
+
+	public void cleanGeo(int count) throws MalformedURLException {
+		for (int i = 0; i < count; i++) {
+			GeoService connection = getGeoServiceConnection(GeoServer.getURL(
+					addr.getHostName(), GeoService.START_PORT + i));
+			if (i % 2 == 0) { // execute only on masters, the slaves will be
+								// replicated
+				connection.execute(new ClearLocationsDBAction());
+				connection.execute(new ClearUsersDBAction());
+			}
+		}
+	}
+
 	private ServerLocatorService getServiceLocator()
 			throws MalformedURLException {
 		return serverLocatorCache;
@@ -197,20 +218,15 @@ public class BasicUnitTest {
 					serverLocatorCache);
 			servers[i].start();
 		}
-		for (int i = 0; i < count; i++) {
-			GeoService connection = getGeoServiceConnection(GeoServer.getURL(
-					addr.getHostName(), GeoService.START_PORT + i));
-			if (i % 2 == 0) { // execute only on masters, the slaves will be
-								// replicated
-				connection.execute(new ClearLocationsDBAction());
-				connection.execute(new ClearUsersDBAction());
-			}
-		}
+
 	}
+
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testLocationSharding() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 		double lng = -74;
 		double lat = 37;
 		int count = 100;
@@ -224,8 +240,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testEventCreationOffer() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 		double lng = 40.8;
 		double lat = -74;
 		int count = LocationHeartbeatHandler.MIN_COUNT + 5;
@@ -244,8 +262,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testEventCreation() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 		double lng = 40.8;
 		double lat = -74;
 		int count = LocationHeartbeatHandler.MIN_COUNT + 10;
@@ -306,8 +326,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testFailover() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 		// veronica, veronica2 all map to the first server
 		serverLocatorCache.getUserShardServer("veronica").execute(
 				new AddUserAction("veronica", "veronica", "pass"));
@@ -378,8 +400,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testReplication() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 		Location location = new Location();
 		location.setId(UUID.randomUUID().toString());
 		location.setLat(44);
@@ -444,8 +468,10 @@ public class BasicUnitTest {
 
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testgetUserEvents() throws Exception {
+		cleanServiceLocator();
 		initShards();
 		startGeoServers(4);
+		cleanGeo(4);
 		double lng = 40.8;
 		double lat = -74;
 		int count = LocationHeartbeatHandler.MIN_COUNT + 10;

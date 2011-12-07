@@ -10,8 +10,9 @@ import edu.cmu.eventtracker.action.GetEventAction;
 import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.dto.Event;
 
-public class GetUserEventsHandler implements
-		ActionHandler<GetUserEvents, List<Event>> {
+public class GetUserEventsHandler
+		implements
+			ActionHandler<GetUserEvents, List<Event>> {
 
 	@Override
 	public List<Event> performAction(GetUserEvents action, ActionContext context) {
@@ -44,7 +45,9 @@ public class GetUserEventsHandler implements
 						.getLocationShardServer(lat, lng)
 						.execute(new GetEventAction(rs.getString("event_id")));
 
-				events.add(event);
+				if (event != null) {
+					events.add(event);
+				}
 			}
 
 			return events;

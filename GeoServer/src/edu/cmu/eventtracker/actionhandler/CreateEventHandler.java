@@ -16,7 +16,10 @@ public class CreateEventHandler
 	@Override
 	public Event performAction(CreateEventAction action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
-
+		if (action.getEvent().getName() == null
+				|| action.getEvent().getName().isEmpty()) {
+			return null;
+		}
 		if (!LocationHeartbeatHandler
 				.canCreateNewEvents(LocationHeartbeatHandler
 						.lookupCloseByEvents(action.getEvent().getLocation()

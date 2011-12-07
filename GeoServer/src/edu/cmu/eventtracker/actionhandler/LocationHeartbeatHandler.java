@@ -39,23 +39,23 @@ public class LocationHeartbeatHandler
 		HashMap<String, Event> closeByEvents = lookupCloseByEvents(action
 				.getLocation().getLat(), action.getLocation().getLng(),
 				geoContext);
-		if (location.getEventId() != null) {
-			Event event = closeByEvents.get(location.getEventId());
-			if (event == null) {
-				throw new NullPointerException(
-						"Event with the given id was not found");
-			}
-			Point[] extremes = GeoLocationService.getExtremePointsFrom(
-					new Point(event.getLocation().getLat(), event.getLocation()
-							.getLng()), RADIUS);
-			if (!(extremes[0].getLatitude() <= location.getLat()
-					&& extremes[0].getLongitude() <= location.getLng()
-					&& location.getLat() <= extremes[1].getLatitude() && location
-					.getLng() <= extremes[1].getLongitude())) {
-				throw new IllegalStateException(
-						"You are too far away from the original event");
-			}
-		}
+		// if (location.getEventId() != null) {
+		// Event event = closeByEvents.get(location.getEventId());
+		// if (event == null) {
+		// throw new NullPointerException(
+		// "Event with the given id was not found");
+		// }
+		// Point[] extremes = GeoLocationService.getExtremePointsFrom(
+		// new Point(event.getLocation().getLat(), event.getLocation()
+		// .getLng()), RADIUS);
+		// if (!(extremes[0].getLatitude() <= location.getLat()
+		// && extremes[0].getLongitude() <= location.getLng()
+		// && location.getLat() <= extremes[1].getLatitude() && location
+		// .getLng() <= extremes[1].getLongitude())) {
+		// throw new IllegalStateException(
+		// "You are too far away from the original event");
+		// }
+		// }
 		response.setEvents(new ArrayList<Event>(closeByEvents.values()));
 		response.setCanCreateEvent(canCreateNewEvents(closeByEvents));
 		return response;
