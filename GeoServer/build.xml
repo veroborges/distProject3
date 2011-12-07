@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. -->
+<project basedir="." default="build" name="GeoServer">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="/Applications/eclipse"/>
+    <property name="EventTrackerWebApp.location" value="../EventTrackerWebApp"/>
+    <property name="junit.output.dir" value="junit"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="JUnit 4.libraryclasspath">
+        <pathelement location="${ECLIPSE_HOME}/plugins/org.junit_4.8.2.v4_8_2_v20110321-1705/junit.jar"/>
+        <pathelement location="${ECLIPSE_HOME}/plugins/org.hamcrest.core_1.1.0.v20090501071000.jar"/>
+    </path>
+    <path id="GeoServer.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/hessian-4.0.7.jar"/>
+        <pathelement location="lib/jetty-all-7.4.1.v20110513.jar"/>
+        <pathelement location="lib/servlet-api-2.5.jar"/>
+        <pathelement location="lib/derby.jar"/>
+        <path refid="JUnit 4.libraryclasspath"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="tests">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="GeoServer.classpath"/>
+        </javac>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="tests"/>
+            <classpath refid="GeoServer.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects">
+        <ant antfile="build.xml" dir="${EventTrackerWebApp.location}" inheritAll="false" target="clean"/>
+        <ant antfile="build.xml" dir="${EventTrackerWebApp.location}" inheritAll="false" target="build"/>
+    </target>
+    <target name="BasicUnitTest">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="edu.cmu.eventtracker.tests.BasicUnitTest" todir="${junit.output.dir}"/>
+            <classpath refid="GeoServer.classpath"/>
+        </junit>
+    </target>
+    <target name="Bootstrap">
+        <java classname="edu.cmu.eventtracker.tests.Bootstrap" failonerror="true" fork="yes">
+            <classpath refid="GeoServer.classpath"/>
+        </java>
+    </target>
+    <target name="GeoServer (1)">
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="withOutAndErr">
+            <formatter type="xml"/>
+            <test name="edu.cmu.eventtracker.tests.BasicUnitTest" todir="${junit.output.dir}"/>
+            <classpath refid="GeoServer.classpath"/>
+        </junit>
+    </target>
+    <target name="GeoServer">
+        <java classname="edu.cmu.eventtracker.geoserver.GeoServer" failonerror="true" fork="yes">
+            <classpath refid="GeoServer.classpath"/>
+        </java>
+    </target>
+    <target name="ServerLocator">
+        <java classname="edu.cmu.eventtracker.serverlocator.ServerLocator" failonerror="true" fork="yes">
+            <classpath refid="GeoServer.classpath"/>
+        </java>
+    </target>
+    <target name="junitreport">
+        <junitreport todir="${junit.output.dir}">
+            <fileset dir="${junit.output.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${junit.output.dir}"/>
+        </junitreport>
+    </target>
+</project>
