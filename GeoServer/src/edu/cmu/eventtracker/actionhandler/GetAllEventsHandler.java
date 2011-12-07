@@ -22,8 +22,13 @@ public class GetAllEventsHandler implements
 			PreparedStatement s = geoContext
 					.getLocationsConnection()
 					.prepareStatement(
-							"select distinct event.id as event_id, name, location.id as location_id, lat, lng, location.timestamp as location_timestamp, min(location.timestamp) from location join event on location.event_id = event.id group by event.id, name, location.id, lat, lng, location.timestamp");
+							"select event.id as event_id, name, location.id as location_id, lat, lng, username, location.timestamp as location_timestamp"
+									+ " from location join (select event_id, min(timestamp) as timestamp from location where ? <= lat and lat <= ? and ? <= lng and lng <= ? group by event_id) q on location.event_id = q.event_id and location.timestamp = q.timestamp join event on event.id = location.event_id");
 
+			s.setDouble(1, action.getLat1());
+			s.setDouble(2, action.getLat2());
+			s.setDouble(3, action.getLng1());
+			s.setDouble(4, action.getLng2());
 			s.execute();
 			ResultSet rs = s.getResultSet();
 			List<Event> events = new ArrayList<Event>();

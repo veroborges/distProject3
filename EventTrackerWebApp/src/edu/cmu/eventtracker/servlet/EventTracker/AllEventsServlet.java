@@ -68,10 +68,17 @@ public class AllEventsServlet extends HttpServlet {
 		ArrayList<ShardResponse> shards = (ArrayList<ShardResponse>) locatorService.getAllLocationShards();
 		List<Event> events = new ArrayList<Event>();
 		GeoService geoService;
+		
+		Double lat1 = Double.parseDouble(request.getParameter("lat1"));
+		Double lng1 = Double.parseDouble(request.getParameter("lng1"));
+		Double lat2 = Double.parseDouble(request.getParameter("lat2"));
+		Double lng2 = Double.parseDouble(request.getParameter("lng2"));
+		
+		
 		 
 		for (ShardResponse shard: shards){
 			 geoService = new GeoServiceFacade(shard);
-			 events.addAll(geoService.execute(new GetAllEventsAction()));
+			 events.addAll(geoService.execute(new GetAllEventsAction(lat1, lng1, lat2, lng2)));
 		}
 
 		gson = new GsonBuilder().create();

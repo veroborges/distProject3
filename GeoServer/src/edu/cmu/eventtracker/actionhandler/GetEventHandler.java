@@ -18,7 +18,8 @@ public class GetEventHandler implements ActionHandler<GetEventAction, Event> {
 			PreparedStatement s = geoContext
 					.getLocationsConnection()
 					.prepareStatement(
-							"select event.id as event_id, name, location.id as location_id, lat, lng, username, location.timestamp as location_timestamp, min(location.timestamp) from location join event on location.event_id = event.id where event.id=? group by event.id, name, location.id, lat, lng, username, location.timestamp");
+							"select event.id as event_id, name, location.id as location_id, lat, lng, username, location.timestamp as location_timestamp"
+									+ " from location join (select event_id, min(timestamp) as timestamp from location where event_id=? group by event_id) q on location.event_id = q.event_id and location.timestamp = q.timestamp join event on event.id = location.event_id");
 
 			s.setString(1, action.getEventId());
 
