@@ -39,15 +39,14 @@
     $.getJSON('EventTrackerServlet', function(data) {
 		console.log(data);
 		$.each(data, function(key, shard) {
+			  console.log(shard.latmax + shard.latmin + shard.lngmin +shard.lngmax);
 			  drawShardBoundary(shard.latmin, shard.latmax, shard.lngmin, shard.lngmax);
 			});
   });
-    
   }
-  
   function drawShardBoundary(latmin, latmax, lngmin, lngmax){
-	  var bounds = google.maps.LatLngBounds(new google.maps.LatLng(latmin, lngmin), new google.maps.LatLng(latmax, lngmax));
-
+	  var bounds = new google.maps.LatLngBounds(new google.maps.LatLng(latmin, lngmin), new google.maps.LatLng(latmax, lngmax));
+	  console.log(bounds);
 	  var rectangle = new google.maps.Rectangle();
 	  
 	  var rectOptions = {
@@ -55,12 +54,13 @@
 		      strokeOpacity: 0.8,
 		      strokeWeight: 2,
 		      fillColor: "#FF0000",
-		      fillOpacity: 0.35,
+		      clickable: false,
+		      fillOpacity: 0.0,
 		      map: map,
 		      bounds: bounds
 		    };
 	  
-		    rectangle.setOptions(rectOptions);
+	rectangle.setOptions(rectOptions);
   }
   
 
