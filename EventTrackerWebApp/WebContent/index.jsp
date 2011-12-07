@@ -154,7 +154,8 @@ function timedPing(markerId){
 	 			"</form>"
 		  }
 		  
-		 if (marker.events.length > 0 && marker.eventid == null && document.getElementById("joinEventF" + markerId) == null){
+		 if (marker.events.length > 0 && marker.eventid == null && (document.getElementById("joinEventF" + markerId) == null 
+				 || marker.events.length > document.getElementById("joinEventF" + markerId).events.options.length )){
 		 	 html += "<form class='joinF' id=\"joinEventF" + markerId + "\">" + "<select id='events'>" +
 		 		"<option value='none'>Join Existing Event</option>";
          
