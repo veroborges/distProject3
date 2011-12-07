@@ -17,9 +17,11 @@
   var map;
   var markers;
   var markerCounter;  
+  var geocoder;
   
   function initialize() {
     var latlng = new google.maps.LatLng(40.4468314, -79.9479933);
+    geocoder = new google.maps.Geocoder();
     var myOptions = {
       zoom: 8,
       center: latlng,
@@ -44,6 +46,18 @@
 			});
   });
   }
+  
+  function codeAddress() {
+	    var address = document.getElementById("address").value;
+	    geocoder.geocode( { 'address': address}, function(results, status) {
+	      if (status == google.maps.GeocoderStatus.OK) {
+	        map.setCenter(results[0].geometry.location);
+	      } else {
+	        alert("Geocode was not successful for the following reason: " + status);
+	      }
+	    });
+	  }
+
   function drawShardBoundary(latmin, latmax, lngmin, lngmax){
 	  var bounds = new google.maps.LatLngBounds(new google.maps.LatLng(latmin, lngmin), new google.maps.LatLng(latmax, lngmax));
 	  console.log(bounds);
@@ -228,6 +242,10 @@ function timedPing(markerId){
 		</nav>
 	</div>
 	<div id="map_wrapper">
+	<form id="geocode_form">
+    	<input id="address" type="textbox">
+    	<input type="button" class="button" value="Search" onclick="codeAddress()">
+ 	 </form>
 	<div id="map_canvas"></div>
 	</div>
 	<div id="message"></div>

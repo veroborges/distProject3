@@ -107,12 +107,16 @@ h1{
 	padding: 10px 200px 70px 200px;
 }
 
-#userHForm input.button{
+#userHForm input.button, #geocode_form input.button{
 	height: 28px;
 	margin-left: 10px;
 }
 
-#userHForm{
+#geocode_form input[type="textbox"]{
+	width: 500px;	
+}
+
+#userHForm, #geocode_form{
 	margin-left: 200px;
 }
 
