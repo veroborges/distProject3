@@ -186,7 +186,7 @@ function timedPing(markerId){
 
       $.post('EventTrackerServlet', {mUser : form.username.value, mName: form.name.value, mPass: form.pwd.value}, function(data) { 
           	//console.log(data);
-      		$('#message').html("User" + data + "Added");
+      		$('#message').html("User " + data + " added");
             marker.username = data;            
             marker.infoWindow.close();
             marker.setTitle(marker.username);
@@ -243,12 +243,12 @@ function timedPing(markerId){
 		</nav>
 	</div>
 	<div id="map_wrapper">
-	<form id="geocode_form">
-    	<input id="address" type="textbox">
-    	<input type="button" class="button" value="Search" onclick="codeAddress()">
- 	 </form>
-	<div id="map_canvas"></div>
-	</div>
+		<form id="geocode_form">
+    		<input id="address" type="textbox">
+    		<input type="button" class="button" value="Search" onclick="codeAddress()">
+ 		 </form>
+		<div id="map_canvas"></div>
 	<div id="message"></div>
+	</div>
 </body>
 </html>

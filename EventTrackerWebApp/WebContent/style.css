@@ -38,7 +38,8 @@ padding: 2px;
 }
 
 input:focus {
-	outline-color: #058bbc; }
+	outline-color: #058bbc; 
+	}
 
 .button {
 	height: 25px;
