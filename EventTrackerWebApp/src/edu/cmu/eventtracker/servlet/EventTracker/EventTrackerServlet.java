@@ -26,6 +26,7 @@ import edu.cmu.eventtracker.dto.LocationHeartbeatResponse;
 import edu.cmu.eventtracker.dto.ShardResponse;
 import edu.cmu.eventtracker.geoserver.GeoService;
 import edu.cmu.eventtracker.geoserver.GeoServiceFacade;
+import edu.cmu.eventtracker.serverlocator.ServerLocatorCache;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 /**
  * Servlet implementation class EventTrackerServlet
@@ -36,7 +37,7 @@ public class EventTrackerServlet extends HttpServlet {
 	private InetAddress addr;
 	private Gson gson;
 	private String json;
-	ServerLocatorService locatorService;
+	ServerLocatorCache locatorService;
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -51,6 +52,8 @@ public class EventTrackerServlet extends HttpServlet {
 		super.init();
 		try {
 			factory = new HessianProxyFactory();
+			factory.setConnectTimeout(GeoService.TIMEOUT);
+			factory.setReadTimeout(GeoService.TIMEOUT);
 			addr = InetAddress.getLocalHost();
 			locatorService = getServiceLocator();
 
@@ -65,7 +68,7 @@ public class EventTrackerServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException {
 		String username = request.getParameter("pUser");
-		if (username != null){
+		if (username != null) {
 			String lat = request.getParameter("pLat");
 			String lng = request.getParameter("pLng");
 			String eventid = request.getParameter("pEventId");
@@ -77,11 +80,12 @@ public class EventTrackerServlet extends HttpServlet {
 			double latD = Double.parseDouble(lat);
 			double lngD = Double.parseDouble(lng);
 
-			Location loc = new Location(null, latD, lngD, username, eventid, null);
+			Location loc = new Location(null, latD, lngD, username, eventid,
+					null);
 
-			LocationHeartbeatResponse res = new GeoServiceFacade(
-				locatorService.getLocationShard(latD, lngD))
-				.execute(new LocationHeartbeatAction(loc));
+			LocationHeartbeatResponse res = locatorService
+					.getLocationShardServer(latD, lngD).execute(
+							new LocationHeartbeatAction(loc));
 
 			System.out.println("can create:" + res.canCreateEvent());
 			System.out.println("events:" + res.getEvents());
@@ -92,9 +96,10 @@ public class EventTrackerServlet extends HttpServlet {
 			response.setCharacterEncoding("UTF-8");
 			response.getWriter().write(json);
 		}
-		
-		else{
-			ArrayList<ShardResponse> shards = (ArrayList<ShardResponse>) locatorService.getAllLocationShards();
+
+		else {
+			ArrayList<ShardResponse> shards = (ArrayList<ShardResponse>) locatorService
+					.getAllLocationShards();
 			System.out.println("shard size" + shards.size());
 			gson = new GsonBuilder().create();
 			String json = gson.toJson(shards);
@@ -131,15 +136,15 @@ public class EventTrackerServlet extends HttpServlet {
 		String lng = request.getParameter("cLng");
 		String eventname = request.getParameter("cEventName");
 
-		System.out.println("user:" + username + " lat: " + lat + " lon: " + lng);
+		System.out
+				.println("user:" + username + " lat: " + lat + " lon: " + lng);
 		double latD = Double.parseDouble(lat);
 		double lngD = Double.parseDouble(lng);
 
-		GeoService geoService = new GeoServiceFacade(
-				locatorService.getLocationShard(latD, lngD));
 
-		Event res = geoService.execute(new CreateEventAction(latD, lngD, username,
-				eventname));
+
+		Event res = locatorService.getLocationShardServer(latD, lngD).execute(new CreateEventAction(latD, lngD,
+				username, eventname));
 
 		gson = new GsonBuilder().create();
 		json = gson.toJson(res);
@@ -160,13 +165,17 @@ public class EventTrackerServlet extends HttpServlet {
 		json = gson.toJson(username);
 	}
 
-	private ServerLocatorService getServiceLocator()
-			throws MalformedURLException {
+	private ServerLocatorCache getServiceLocator() throws MalformedURLException {
 
-		String locatorURL = getServiceLocatorURL(addr.getHostName(),
-				ServerLocatorService.SERVER_LOCATOR_PORT);
-		return (ServerLocatorService) factory.create(
-				ServerLocatorService.class, locatorURL);
+		ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
+		for (int i = 0; i < 2; i++) {
+			String locatorURL = getServiceLocatorURL(addr.getHostName(),
+					ServerLocatorService.START_PORT + i);
+			ServerLocatorService service = (ServerLocatorService) factory
+					.create(ServerLocatorService.class, locatorURL);
+			services.add(service);
+		}
+		return new ServerLocatorCache(services);
 	}
 
 	public static String getServiceLocatorURL(String hostname, int port) {

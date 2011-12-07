@@ -50,8 +50,7 @@ public class BasicUnitTest {
 	public static final String protocol = "jdbc:derby:";
 	private Random gen = new Random();
 	private GeoServer[] servers;
-	private ServerLocator serverLocator;
-	private final int startPort = 9990;
+	private ServerLocator[] serverLocators;
 	private HessianProxyFactory factory;
 	private InetAddress addr;
 	private ServerLocatorCache serverLocatorCache;
@@ -62,15 +61,17 @@ public class BasicUnitTest {
 		factory.setConnectTimeout(GeoService.TIMEOUT);
 		factory.setReadTimeout(GeoService.TIMEOUT);
 		addr = InetAddress.getLocalHost();
-		startServerLocator();
+		startServerLocators();
 
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		Thread.sleep(1000);
-		if (serverLocator != null) {
-			serverLocator.stop();
+		if (serverLocators != null) {
+			for (ServerLocator server : serverLocators) {
+				server.stop();
+			}
 		}
 		if (servers != null) {
 			for (GeoServer server : servers) {
@@ -134,19 +135,25 @@ public class BasicUnitTest {
 		testInsertUser("anar", geoServices[2]);
 	}
 
-	public void startServerLocator() throws Exception {
-		serverLocator = new ServerLocator(8888);
-		serverLocator.start();
+	public void startServerLocators() throws Exception {
+		serverLocators = new ServerLocator[2];
+		for (int i = 0; i < serverLocators.length; i++) {
+			serverLocators[i] = new ServerLocator(
+					ServerLocatorService.START_PORT + i);
+			serverLocators[i].start();
+		}
 		ArrayList<ServerLocatorService> locatorServices = new ArrayList<ServerLocatorService>();
-		String locatorURL = ServerLocator.getURL(addr.getHostName(),
-				ServerLocatorService.SERVER_LOCATOR_PORT);
-		ServerLocatorService service = (ServerLocatorService) factory.create(
-				ServerLocatorService.class, locatorURL);
-		locatorServices.add(service);
+		for (int i = 0; i < serverLocators.length; i++) {
+			String locatorURL = ServerLocator.getURL(addr.getHostName(),
+					(ServerLocatorService.START_PORT + i));
+			ServerLocatorService service = (ServerLocatorService) factory
+					.create(ServerLocatorService.class, locatorURL);
+			locatorServices.add(service);
+		}
+
 		serverLocatorCache = new ServerLocatorCache(locatorServices);
 		getServiceLocator().clearTables();
 	}
-
 	private ServerLocatorService getServiceLocator()
 			throws MalformedURLException {
 		return serverLocatorCache;
@@ -178,7 +185,7 @@ public class BasicUnitTest {
 		GeoService[] services = new GeoService[count];
 		for (int i = 0; i < count; i++) {
 			services[i] = getGeoServiceConnection(GeoServer.getURL(
-					addr.getHostName(), startPort + i));
+					addr.getHostName(), (GeoService.START_PORT + i)));
 		}
 		return services;
 	}
@@ -186,14 +193,13 @@ public class BasicUnitTest {
 	public void startGeoServers(int count) throws Exception {
 		servers = new GeoServer[count];
 		for (int i = 0; i < count; i++) {
-			servers[i] = new GeoServer(i + startPort, i % 2 == 0,
-					ServerLocator.getURL(addr.getHostName(),
-							ServerLocatorService.SERVER_LOCATOR_PORT));
+			servers[i] = new GeoServer(i + GeoService.START_PORT, i % 2 == 0,
+					serverLocatorCache);
 			servers[i].start();
 		}
 		for (int i = 0; i < count; i++) {
 			GeoService connection = getGeoServiceConnection(GeoServer.getURL(
-					addr.getHostName(), startPort + i));
+					addr.getHostName(), GeoService.START_PORT + i));
 			if (i % 2 == 0) { // execute only on masters, the slaves will be
 								// replicated
 				connection.execute(new ClearLocationsDBAction());
@@ -201,7 +207,6 @@ public class BasicUnitTest {
 			}
 		}
 	}
-
 	@Test(timeout = GeoService.TIMEOUT)
 	public void testLocationSharding() throws Exception {
 		initShards();

@@ -10,7 +10,6 @@ import com.caucho.hessian.client.HessianRuntimeException;
 import edu.cmu.eventtracker.action.ReplicationAction;
 import edu.cmu.eventtracker.action.UserShardAction;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorCache;
-import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
 public class UserShardReplicator extends Thread {
 
@@ -19,10 +18,10 @@ public class UserShardReplicator extends Thread {
 	private ServerLocatorCache serverLocatorCache;
 	private String sourceUrl;
 
-	public UserShardReplicator(ArrayList<ServerLocatorService> locatorServices,
+	public UserShardReplicator(ServerLocatorCache serverLocatorCache,
 			String sourceUrl) throws MalformedURLException {
 		super("UserShardReplicator");
-		serverLocatorCache = new ServerLocatorCache(locatorServices);
+		this.serverLocatorCache = serverLocatorCache;
 		this.sourceUrl = sourceUrl;
 	}
 

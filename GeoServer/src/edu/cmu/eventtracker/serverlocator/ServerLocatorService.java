@@ -6,7 +6,7 @@ import edu.cmu.eventtracker.dto.ShardResponse;
 
 public interface ServerLocatorService {
 
-	public static final int SERVER_LOCATOR_PORT = 8888;
+	public static final int START_PORT = 8880;
 
 	public ShardResponse getUserShard(String username);
 

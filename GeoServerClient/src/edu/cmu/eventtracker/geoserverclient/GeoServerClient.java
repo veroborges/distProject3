@@ -15,9 +15,11 @@ public class GeoServerClient {
 	public static void main(String[] args) throws MalformedURLException {
 		
 		//figure out URL for locator service, assume DNS will take care of that
-		String url = "http://localhost:" + ServerLocator.SERVER_LOCATOR_PORT + "/" + ServerLocatorService.class.getSimpleName(); 
+		String url = "http://localhost:" + ServerLocatorService.START_PORT + "/" + ServerLocatorService.class.getSimpleName(); 
 
 		HessianProxyFactory factory = new HessianProxyFactory();
+		factory.setConnectTimeout(GeoService.TIMEOUT);
+		factory.setReadTimeout(GeoService.TIMEOUT);
 		ServerLocatorService locatorService = (ServerLocatorService) factory.create(ServerLocatorService.class, url);
 		String master = locatorService.getUserShard("testuser").getMaster();
 		GeoService geoService = (GeoService) factory.create(GeoService.class, master);

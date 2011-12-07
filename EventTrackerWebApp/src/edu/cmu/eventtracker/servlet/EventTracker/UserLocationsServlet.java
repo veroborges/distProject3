@@ -3,6 +3,7 @@ package edu.cmu.eventtracker.servlet.EventTracker;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -17,7 +18,7 @@ import com.google.gson.GsonBuilder;
 import edu.cmu.eventtracker.action.GetUserEvents;
 import edu.cmu.eventtracker.dto.Event;
 import edu.cmu.eventtracker.geoserver.GeoService;
-import edu.cmu.eventtracker.geoserver.GeoServiceFacade;
+import edu.cmu.eventtracker.serverlocator.ServerLocatorCache;
 import edu.cmu.eventtracker.serverlocator.ServerLocatorService;
 
 /**
@@ -29,13 +30,15 @@ public class UserLocationsServlet extends HttpServlet {
 	private InetAddress addr;
 	private Gson gson;
 	private String json;
-	ServerLocatorService locatorService;
+	ServerLocatorCache locatorService;
     
 	@Override
 	public void init() throws ServletException {
 		super.init();
 		try {
 			factory = new HessianProxyFactory();
+			factory.setConnectTimeout(GeoService.TIMEOUT);
+			factory.setReadTimeout(GeoService.TIMEOUT);
 			addr = InetAddress.getLocalHost();
 			locatorService = getServiceLocator();
 
@@ -65,10 +68,8 @@ public class UserLocationsServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String username = request.getParameter("username");
 
-		GeoService geoService = new GeoServiceFacade(
-				locatorService.getUserShard(username));
 
-		List<Event> events = geoService.execute(new GetUserEvents(username));
+		List<Event> events = locatorService.getUserShardServer(username).execute(new GetUserEvents(username));
 
 		gson = new GsonBuilder().create();
 		json = gson.toJson(events);
@@ -79,13 +80,18 @@ public class UserLocationsServlet extends HttpServlet {
 		response.getWriter().write(json);
 	}
 	
-	private ServerLocatorService getServiceLocator()
+	private ServerLocatorCache getServiceLocator()
 			throws MalformedURLException {
 
-		String locatorURL = getServiceLocatorURL(addr.getHostName(),
-				ServerLocatorService.SERVER_LOCATOR_PORT);
-		return (ServerLocatorService) factory.create(
-				ServerLocatorService.class, locatorURL);
+		ArrayList<ServerLocatorService> services = new ArrayList<ServerLocatorService>();
+		for (int i = 0; i < 2; i++) {
+			String locatorURL = getServiceLocatorURL(addr.getHostName(),
+					ServerLocatorService.START_PORT + i);
+			ServerLocatorService service = (ServerLocatorService) factory.create(
+					ServerLocatorService.class, locatorURL);
+			services.add(service);
+		}
+		return new ServerLocatorCache(services);
 	}
 
 	public static String getServiceLocatorURL(String hostname, int port) {

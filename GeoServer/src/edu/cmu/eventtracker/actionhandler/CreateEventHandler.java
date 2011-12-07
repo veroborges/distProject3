@@ -3,7 +3,6 @@ package edu.cmu.eventtracker.actionhandler;
 import java.util.UUID;
 
 import edu.cmu.eventtracker.action.CreateEventAction;
-import edu.cmu.eventtracker.action.GetCloseByEvents;
 import edu.cmu.eventtracker.action.GetEventAction;
 import edu.cmu.eventtracker.action.InsertEventAction;
 import edu.cmu.eventtracker.action.LocationHeartbeatAction;
@@ -18,9 +17,11 @@ public class CreateEventHandler
 	public Event performAction(CreateEventAction action, ActionContext context) {
 		GeoServiceContext geoContext = (GeoServiceContext) context;
 
-		if (!LocationHeartbeatHandler.canCreateNewEvents(geoContext
-				.execute(new GetCloseByEvents(action.getEvent().getLocation()
-						.getLat(), action.getEvent().getLocation().getLng())))) {
+		if (!LocationHeartbeatHandler
+				.canCreateNewEvents(LocationHeartbeatHandler
+						.lookupCloseByEvents(action.getEvent().getLocation()
+								.getLat(), action.getEvent().getLocation()
+								.getLng(), geoContext))) {
 			throw new IllegalStateException("Can't create new events yet");
 		}
 		Location location = action.getEvent().getLocation();

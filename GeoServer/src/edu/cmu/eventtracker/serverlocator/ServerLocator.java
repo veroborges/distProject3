@@ -52,7 +52,7 @@ public class ServerLocator {
 
 	public static void main(String[] args) {
 		try {
-			new ServerLocator(ServerLocatorService.SERVER_LOCATOR_PORT).start();
+			new ServerLocator(ServerLocatorService.START_PORT).start();
 		} catch (Throwable e) {
 			throw new IllegalStateException(e);
 		}

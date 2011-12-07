@@ -9,27 +9,52 @@ public class GetCloseByEvents
 			Action<HashMap<String, Event>>,
 			ReadOnlyAction {
 
-	private double lat;
-	private double lng;
+	private double latmin;
+	private double lngmin;
+	private double latmax;
+	private double lngmax;
 
 	public GetCloseByEvents() {
 	}
 
-	public GetCloseByEvents(double lat, double lng) {
-		this.lat = lat;
-		this.lng = lng;
+	public GetCloseByEvents(double latmin, double lngmin, double latmax,
+			double lngmax) {
+		this.latmin = latmin;
+		this.lngmin = lngmin;
+		this.latmax = latmax;
+		this.lngmax = lngmax;
 	}
 
-	public double getLng() {
-		return lng;
+	public double getLatmin() {
+		return latmin;
 	}
-	public void setLng(double lng) {
-		this.lng = lng;
+
+	public void setLatmin(double latmin) {
+		this.latmin = latmin;
 	}
-	public double getLat() {
-		return lat;
+
+	public double getLngmin() {
+		return lngmin;
 	}
-	public void setLat(double lat) {
-		this.lat = lat;
+
+	public void setLngmin(double lngmin) {
+		this.lngmin = lngmin;
 	}
+
+	public double getLatmax() {
+		return latmax;
+	}
+
+	public void setLatmax(double latmax) {
+		this.latmax = latmax;
+	}
+
+	public double getLngmax() {
+		return lngmax;
+	}
+
+	public void setLngmax(double lngmax) {
+		this.lngmax = lngmax;
+	}
+
 }
